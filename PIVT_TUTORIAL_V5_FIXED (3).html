@@ -114,6 +114,26 @@
         .animate-glitch-wave{animation:glitchWave 1.1s steps(2,end) infinite}
         .animate-aurora-spin{animation:auroraSpin 8s linear infinite}
 
+        /* Adaptive UI system for phones/tablets/laptops/desktops */
+        .ui-shell{width:100%}
+        .adaptive-modal{width:100%}
+        .adaptive-card{width:100%}
+        .adaptive-title{line-height:1.1}
+        @media (max-width:640px){
+            .ui-shell .adaptive-card{padding:1rem!important;border-radius:1rem!important}
+            .ui-shell .adaptive-title{font-size:clamp(1.4rem,8vw,2.1rem)!important}
+            .ui-shell .adaptive-grid{grid-template-columns:1fr!important}
+            .ui-shell .adaptive-modal{max-width:96vw!important;max-height:92vh!important}
+            .ui-shell .adaptive-tight{padding:.5rem!important}
+        }
+        @media (min-width:641px) and (max-width:1024px){
+            .ui-shell .adaptive-modal{max-width:92vw!important}
+            .ui-shell .adaptive-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+        }
+        @media (min-width:1025px){
+            .ui-shell .adaptive-modal{max-width:min(1200px,90vw)!important}
+        }
+
     </style>
     </head>
 <body>
@@ -548,6 +568,10 @@
             music:{
                 defaultVolume:70,
                 autoplayOnTrackChange:true
+            },
+            ui:{
+                phoneMax:640,
+                tabletMax:1024
             }
         };
 
@@ -656,6 +680,8 @@
             const detectedTimeZone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
             const [countdownTick,setCountdownTick]=useState(0);
             const [timeZone,setTimeZone]=useState(detectedTimeZone);
+            const [uiWidth,setUiWidth]=useState(window.innerWidth||1280);
+            const [uiProfile,setUiProfile]=useState('desktop');
             const [editingTask,setEditingTask]=useState(null);
             const [showSeasonComplete,setShowSeasonComplete]=useState(null);
             const [musicEnabled,setMusicEnabled]=useState(false);
@@ -2085,6 +2111,24 @@ Make sure the username is spelled correctly (it's case-insensitive). They must h
                 // Load saved theme
                 const savedTheme=localStorage.getItem('app-theme')||'dark';
                 setAppTheme(savedTheme);
+            },[]);
+
+            useEffect(()=>{
+                const updateUiProfile=()=>{
+                    const w=window.innerWidth||1280;
+                    setUiWidth(w);
+                    if(w<=APP_CONFIG.ui.phoneMax)setUiProfile('phone');
+                    else if(w<=APP_CONFIG.ui.tabletMax)setUiProfile('tablet');
+                    else if(w<=1440)setUiProfile('laptop');
+                    else setUiProfile('desktop');
+                };
+                updateUiProfile();
+                window.addEventListener('resize',updateUiProfile);
+                window.addEventListener('orientationchange',updateUiProfile);
+                return()=>{
+                    window.removeEventListener('resize',updateUiProfile);
+                    window.removeEventListener('orientationchange',updateUiProfile);
+                };
             },[]);
 
             useEffect(()=>{
@@ -3734,13 +3778,13 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
 
             if(!user){
                 return (
-                    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black text-white flex items-center justify-center p-4">
-                        <div className={`max-w-md w-full ${securityMode==='lockdown'?'animate-glitch-wave':securityMode==='hardened'?'animate-edit-shake':''}`} key={authShakeKey}>
+                    <div className={`ui-shell ui-${uiProfile} min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black text-white flex items-center justify-center p-3 md:p-4`} data-ui={uiProfile}>
+                        <div className={`adaptive-card max-w-md w-full ${securityMode==='lockdown'?'animate-glitch-wave':securityMode==='hardened'?'animate-edit-shake':''}`} key={authShakeKey}>
                             {securityBanner&&<div className={`mb-3 text-xs rounded-xl border px-3 py-2 font-bold ${securityBanner.mode==='lockdown'?'bg-red-900/40 border-red-500 text-red-200':'bg-cyan-900/30 border-cyan-500 text-cyan-200'}`}>{securityBanner.message}</div>}
                             {authMode==='welcome'&&(
                                 <div className="text-center animate-fadeIn">
                                     <div className="text-8xl mb-6 animate-float animate-aurora-spin">🎮</div>
-                                    <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-text-sheen">P.I.V.T</h1>
+                                    <h1 className="adaptive-title text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-text-sheen">P.I.V.T</h1>
                                     <p className="text-gray-400 mb-8">Productivity • Innovation • Victory • Transformation</p>
                                     <div className="space-y-4">
                                         <button onClick={()=>setAuthMode('login')} className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-cyan-500 to-blue-500 hover:opacity-90 transition-all transform hover:scale-105 shadow-lg">Login</button>
@@ -3769,7 +3813,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                     >
                                         🔍 Check for Lost Accounts
                                     </button>
-                                    <div className="mt-8 grid grid-cols-4 gap-3 opacity-70">
+                                    <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 opacity-70 adaptive-grid">
                                         {tiers.filter(t=>t.season===1).slice(0,4).map((t,i)=><div key={i} className="text-center animate-quantum"><div className="text-2xl mb-1">{t.icon}</div><div className="text-xs text-cyan-300">{t.name}</div></div>)}
                                     </div>
                                     <p className="text-[11px] text-gray-500 mt-3">Season 1 preview only — other seasons unlock in-game.</p>
@@ -3839,7 +3883,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
             // MAIN GAME UI
             return(
                 <div className={appTheme==='dark'?'dark':''}>
-                <div className={`min-h-screen ${appTheme==='dark'?'bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white':'bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 text-gray-900'} p-4 md:p-8 transition-colors duration-300`}>
+                <div className={`ui-shell ui-${uiProfile} min-h-screen ${appTheme==='dark'?'bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white':'bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 text-gray-900'} p-3 md:p-6 lg:p-8 transition-colors duration-300`} data-ui={uiProfile}>
                     {coinAnim&&<div key={coinAnim.key} className="fixed top-20 right-4 z-50 animate-coinPop"><div className="bg-yellow-500 text-black px-4 py-2 rounded-full font-bold text-xl shadow-lg">+{coinAnim.amt} 💰</div></div>}
                     {xpAnim&&<div key={xpAnim.key} className="fixed top-32 right-4 z-50 animate-coinPop"><div className="bg-green-500 text-white px-4 py-2 rounded-full font-bold text-xl shadow-lg">+{xpAnim.amt} ⚡</div></div>}
                     {showTierUp&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-95 animate-fadeIn"><div className="text-center animate-reward-burst"><div className="text-9xl mb-4 animate-bounce animate-mega-flash">{ct.icon}</div><h1 className={`text-8xl font-black mb-3 bg-gradient-to-r ${ct.color} bg-clip-text text-transparent animate-pulse`}>MEGA TIER UP!</h1><p className="text-5xl font-bold mb-2 animate-neon-pulse">{ct.name}</p><p className="text-2xl text-yellow-300">+500 Coins! 💰</p><div className="flex justify-center gap-3 mt-5">{[...Array(8)].map((_,i)=><div key={i} className="w-10 h-10 text-yellow-300 animate-bounce" style={{animationDelay:`${i*0.08}s`}}><Star/></div>)}</div></div></div>}
@@ -4424,7 +4468,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                         {showShop&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 p-4"><div className="bg-gray-800 rounded-2xl max-w-6xl w-full h-screen border border-gray-700 animate-scaleIn flex flex-col"><div className="sticky top-0 bg-gradient-to-b from-gray-800 via-gray-800 to-transparent pb-6 pt-8 px-8 z-50 backdrop-blur-sm shadow-2xl border-b-2 border-purple-500"><div className="flex items-center justify-between mb-4"><h2 className="text-4xl font-bold flex items-center gap-2"><Shop/><span>Shop</span></h2><button onClick={()=>setShowShop(false)} className="p-2 rounded-xl bg-gray-700 hover:bg-gray-600 transition-all"><X/></button></div><div className="flex gap-2 flex-wrap">{rarities.map((r,i)=><button key={i} onClick={()=>setShopFilter(i)} className={`px-4 py-2 rounded-lg font-bold transition-all ${shopFilter===i?`bg-gradient-to-r ${r.c}`:'bg-gray-700 hover:bg-gray-600'}`}>{r.n}</button>)}</div></div><div className="flex-1 overflow-y-auto px-8 pb-8 scrollbar-hide"><div className="grid md:grid-cols-3 gap-4 pt-4">{shopItems.filter(item=>item.rarity===shopFilter&&(!item.season||item.season<=season)).map(item=>{const r=rarities[item.rarity];const locked=tier<(item.minT||0)||lvl<(item.minL||1);const isOwned=owned.includes(item.id);const isBooster=item.type==='xp_boost'||item.type==='coin_boost'||item.type==='combo_boost';const shouldBlur=item.rarity>=5&&locked;return<div key={item.id} className={`bg-gray-700 rounded-xl p-4 border-3 transition-all ${item.rarity>=8?'animate-neon-pulse animate-mega-flash':''} ${shouldBlur?'blur-sm':''} ${locked?'opacity-50':''}`} style={{borderWidth:'3px',borderStyle:'solid',borderImage:`linear-gradient(to right, ${r.c.replace('from-','').replace('to-',',')}) 1`}}><div className={`w-full h-2 rounded-full bg-gradient-to-r ${r.c} mb-3`}></div><div className="flex items-center justify-between mb-3"><div className="flex items-center gap-3"><span className="text-4xl">{item.icon||item.char}</span><div><p className="font-bold">{shouldBlur?'???':item.n}</p>{!shouldBlur&&isBooster&&<><p className="text-[11px] text-cyan-300 mt-1">⏱ {getBoosterTimingText(item)}</p>{item.season&&<p className="text-[11px] text-purple-300">Season {item.season}+ booster</p>}</>}<p className={`text-xs bg-gradient-to-r ${r.c} bg-clip-text text-transparent font-bold`}>{r.n}</p></div></div><div className="text-right"><p className="text-2xl font-bold text-yellow-400">{shouldBlur?'???':item.price} 💰</p></div></div>{locked&&<p className="text-red-400 text-sm mb-2">🔒 {shouldBlur?'Locked - Reach Higher Tier to Reveal':`Requires ${tiers[item.minT||0].name}${item.minL>1?` Level ${item.minL}`:''}`}</p>}{isOwned&&!isBooster?<div className="bg-green-600 text-center py-2 rounded-lg font-bold">✓ Owned</div>:<button onClick={()=>buyItem(item)} disabled={locked} className={`w-full py-2 rounded-lg font-bold ${locked?'bg-gray-600 cursor-not-allowed':'bg-gradient-to-r from-yellow-500 to-orange-500 hover:opacity-90'}`}>{locked?'🔒 Locked':'Buy'}</button>}</div>})}{shopFilter===10&&<div className="bg-gray-700 rounded-xl p-4 border-3" style={{borderWidth:'3px',borderStyle:'solid',borderImage:'linear-gradient(to right, rgb(168, 85, 247), rgb(236, 72, 153)) 1'}}><div className="w-full h-2 rounded-full bg-gradient-to-r from-purple-400 to-purple-500 mb-3"></div><div className="flex items-center justify-between mb-3"><div className="flex items-center gap-3"><span className="text-4xl">🛡️</span><div><p className="font-bold">Streak Saver</p><p className="text-xs text-purple-400 font-bold">Special Item</p></div></div><p className="text-2xl font-bold text-yellow-400">1000 💰</p></div><p className="text-sm text-gray-400 mb-2">Save your streak! (1x per week)</p>{stats.streakSaverUsedThisWeek?<div className="bg-gray-600 text-center py-2 rounded-lg font-bold">Used This Week</div>:<button onClick={buyStreakSaver} className="w-full py-2 rounded-lg font-bold bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90">Buy & Use</button>}</div>}</div></div></div></div>}
 
                         {showFocus&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4">
-                            <div className="bg-gray-800 rounded-2xl p-8 max-w-3xl w-full border-2 border-purple-500 animate-scaleIn animate-card-pop max-h-screen overflow-y-auto scrollbar-hide">
+                            <div className="adaptive-modal adaptive-card bg-gray-800 rounded-2xl p-8 max-w-3xl w-full border-2 border-purple-500 animate-scaleIn animate-card-pop max-h-screen overflow-y-auto scrollbar-hide">
                                 <div className="flex items-center justify-between mb-6">
                                     <h2 className="text-4xl font-bold flex items-center gap-2">
                                         <Clock/>
@@ -4778,7 +4822,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                             </div>
                         </div>}
 
-                        {showAch&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 p-4"><div className="bg-gray-800 rounded-2xl p-8 max-w-2xl w-full border border-gray-700 animate-scaleIn animate-card-pop max-h-screen overflow-y-auto scrollbar-hide"><div className="flex items-center justify-between mb-6"><h2 className="text-4xl font-bold flex items-center gap-2"><Award/><span>Achievements ({achs.length}/{achList.length})</span></h2><button onClick={()=>setShowAch(false)} className="p-2 rounded-xl bg-gray-700 hover:bg-gray-600 transition-all"><X/></button></div><div className="space-y-3">{achList.map(a=>{const unlocked=achs.includes(a.id);return<div key={a.id} className={`bg-gray-700 rounded-xl p-4 flex items-center gap-4 ${unlocked?'border-2 border-yellow-500':'opacity-50'}`}><span className="text-5xl">{a.i}</span><div className="flex-1"><p className="font-bold text-lg">{a.n}</p><p className="text-sm text-gray-400">{a.d}</p><p className="text-yellow-400 text-sm font-bold">+{a.r} Coins</p></div>{unlocked&&<div className="text-green-400 font-bold text-xl">✓</div>}</div>})}</div></div></div>}
+                        {showAch&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 p-4"><div className="adaptive-modal adaptive-card bg-gray-800 rounded-2xl p-8 max-w-2xl w-full border border-gray-700 animate-scaleIn animate-card-pop max-h-screen overflow-y-auto scrollbar-hide"><div className="flex items-center justify-between mb-6"><h2 className="text-4xl font-bold flex items-center gap-2"><Award/><span>Achievements ({achs.length}/{achList.length})</span></h2><button onClick={()=>setShowAch(false)} className="p-2 rounded-xl bg-gray-700 hover:bg-gray-600 transition-all"><X/></button></div><div className="space-y-3">{achList.map(a=>{const unlocked=achs.includes(a.id);return<div key={a.id} className={`bg-gray-700 rounded-xl p-4 flex items-center gap-4 ${unlocked?'border-2 border-yellow-500':'opacity-50'}`}><span className="text-5xl">{a.i}</span><div className="flex-1"><p className="font-bold text-lg">{a.n}</p><p className="text-sm text-gray-400">{a.d}</p><p className="text-yellow-400 text-sm font-bold">+{a.r} Coins</p></div>{unlocked&&<div className="text-green-400 font-bold text-xl">✓</div>}</div>})}</div></div></div>}
 
 
                         {showBattle&&(()=>{
@@ -4789,8 +4833,8 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                             const inboxCount=pendingChallenges.length+pendingTrades.length+friendRequests.length;
                             const firebaseOn=FB.isReady();
                             return(
-                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-2 md:p-4">
-                                <div className="bg-gray-900 rounded-2xl max-w-4xl w-full border-2 border-purple-500 animate-modal-slide flex flex-col max-h-[96vh] overflow-hidden shadow-2xl">
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-2 md:p-4 adaptive-tight">
+                                <div className="adaptive-modal bg-gray-900 rounded-2xl max-w-4xl w-full border-2 border-purple-500 animate-modal-slide flex flex-col max-h-[96vh] overflow-hidden shadow-2xl">
                                     {/* Header */}
                                     <div className="flex items-center justify-between px-5 pt-5 pb-2 border-b border-gray-700">
                                         <div className="flex items-center gap-3">
@@ -5276,7 +5320,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                             </div>
                         )}
 
-                        {showSet&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 p-4"><div className="bg-gray-800 rounded-2xl p-8 max-w-2xl w-full border border-gray-700 animate-modal-slide animate-glow-ring max-h-screen overflow-y-auto scrollbar-hide"><h2 className="text-3xl font-bold mb-6 flex items-center gap-2"><Settings/><span>Settings</span></h2><div className="space-y-4 mb-6"><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-2"><User/><span className="text-gray-400 text-sm">Username</span></div><p className="text-xl font-bold">{user}</p></div><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-2"><Trophy/><span className="text-gray-400 text-sm">Progress</span></div><p className="text-xl font-bold">{ct.name} - Level {lvl}</p><p className="text-sm text-gray-400 mt-1">{coins.toLocaleString()} Coins 💰</p></div><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-2"><Star/><span className="text-gray-400 text-sm">Stats</span></div><p className="text-lg">{stats.tasksCompleted} tasks • {stats.currentStreak} day streak</p><p className="text-sm text-gray-400">Best: {stats.longestStreak} days</p></div><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-3"><Clock/><span className="text-gray-400 text-sm">Time Zone</span></div><p className="text-xs text-gray-400 mb-2">Current: <span className="text-cyan-300 font-bold">{getTimezoneClock().pretty} ({getTimezoneClock().shortZone})</span></p><select value={timeZone} onChange={(e)=>setTimeZone(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">{timeZoneChoices.map(tz=><option key={tz} value={tz}>{tz}</option>)}</select></div><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-2"><Clock/><span className="text-gray-400 text-sm">Activity Log (Last {activityLog.length})</span></div><div className="max-h-48 overflow-y-auto scrollbar-hide space-y-2 mt-2">{activityLog.length===0?<p className="text-gray-500 text-sm">No activity yet</p>:activityLog.slice(0,20).map((log,i)=><div key={i} className="bg-gray-800 rounded p-2 text-xs"><p className="text-gray-400">{log.date}</p><p className="text-white font-bold">{log.type==='task_completed'?`✅ ${log.details.task}`:log.type==='level_up'?`⬆️ Level ${log.details.level}`:log.type==='tier_up'?`🌟 ${log.details.tier}`:log.type}</p>{log.details.xp&&<p className="text-yellow-400">+{log.details.xp} XP, +{log.details.coins} Coins</p>}</div>)}</div></div></div><div className="space-y-3"><button onClick={exportUserData} className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-90 transition-all flex items-center justify-center gap-2"><Star/><span>Export Data</span></button><button onClick={logout} className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-orange-500 to-red-500 hover:opacity-90 transition-all flex items-center justify-center gap-2"><LogOut/><span>Logout</span></button><button onClick={deleteAcc} className="w-full py-3 rounded-xl font-bold bg-red-900 hover:bg-red-800 transition-all text-red-200">Delete Account</button><button onClick={()=>setShowSet(false)} className="w-full py-3 rounded-xl font-bold bg-gray-700 hover:bg-gray-600 transition-all">Close</button></div></div></div>}
+                        {showSet&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 p-4"><div className="adaptive-modal adaptive-card bg-gray-800 rounded-2xl p-8 max-w-2xl w-full border border-gray-700 animate-modal-slide animate-glow-ring max-h-screen overflow-y-auto scrollbar-hide"><h2 className="text-3xl font-bold mb-6 flex items-center gap-2"><Settings/><span>Settings</span></h2><div className="space-y-4 mb-6"><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-2"><User/><span className="text-gray-400 text-sm">Username</span></div><p className="text-xl font-bold">{user}</p></div><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-2"><Trophy/><span className="text-gray-400 text-sm">Progress</span></div><p className="text-xl font-bold">{ct.name} - Level {lvl}</p><p className="text-sm text-gray-400 mt-1">{coins.toLocaleString()} Coins 💰</p></div><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-2"><Star/><span className="text-gray-400 text-sm">Stats</span></div><p className="text-lg">{stats.tasksCompleted} tasks • {stats.currentStreak} day streak</p><p className="text-sm text-gray-400">Best: {stats.longestStreak} days</p></div><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-3"><Clock/><span className="text-gray-400 text-sm">Time Zone</span></div><p className="text-xs text-gray-400 mb-2">Current: <span className="text-cyan-300 font-bold">{getTimezoneClock().pretty} ({getTimezoneClock().shortZone})</span></p><select value={timeZone} onChange={(e)=>setTimeZone(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">{timeZoneChoices.map(tz=><option key={tz} value={tz}>{tz}</option>)}</select></div><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-2"><Clock/><span className="text-gray-400 text-sm">Activity Log (Last {activityLog.length})</span></div><div className="max-h-48 overflow-y-auto scrollbar-hide space-y-2 mt-2">{activityLog.length===0?<p className="text-gray-500 text-sm">No activity yet</p>:activityLog.slice(0,20).map((log,i)=><div key={i} className="bg-gray-800 rounded p-2 text-xs"><p className="text-gray-400">{log.date}</p><p className="text-white font-bold">{log.type==='task_completed'?`✅ ${log.details.task}`:log.type==='level_up'?`⬆️ Level ${log.details.level}`:log.type==='tier_up'?`🌟 ${log.details.tier}`:log.type}</p>{log.details.xp&&<p className="text-yellow-400">+{log.details.xp} XP, +{log.details.coins} Coins</p>}</div>)}</div></div></div><div className="space-y-3"><button onClick={exportUserData} className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-90 transition-all flex items-center justify-center gap-2"><Star/><span>Export Data</span></button><button onClick={logout} className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-orange-500 to-red-500 hover:opacity-90 transition-all flex items-center justify-center gap-2"><LogOut/><span>Logout</span></button><button onClick={deleteAcc} className="w-full py-3 rounded-xl font-bold bg-red-900 hover:bg-red-800 transition-all text-red-200">Delete Account</button><button onClick={()=>setShowSet(false)} className="w-full py-3 rounded-xl font-bold bg-gray-700 hover:bg-gray-600 transition-all">Close</button></div></div></div>}
 
                         <div className={`text-center mt-8 ${appTheme==='dark'?'text-gray-500':'text-gray-600'} text-sm`}><p>🔥 Keep grinding! Every task brings you closer to CELESTIAL tier! 💪</p></div>
                     </div>
