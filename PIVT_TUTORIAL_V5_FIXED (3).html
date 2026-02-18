@@ -43,6 +43,11 @@
         .animate-cosmic-glow{animation:cosmicGlow 3s ease-in-out infinite}
         .animate-rainbow{background-size:400% 400%;animation:rainbowShift 8s ease infinite}
         .animate-sparkle{animation:sparkle 2s ease-in-out infinite}
+        .ui-card{transition:transform 0.18s ease,box-shadow 0.18s ease,border-color 0.18s ease}
+        .ui-card:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,0.25)}
+        @media (prefers-reduced-motion: reduce){
+            *,*::before,*::after{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;scroll-behavior:auto !important}
+        }
         .scrollbar-hide::-webkit-scrollbar{display:none}
         .scrollbar-hide{-ms-overflow-style:none;scrollbar-width:none}
         
@@ -635,40 +640,48 @@
             // SECURITY SYSTEM - Anti-Cheat Protection
             // ============================================
             
-            // Prevent console manipulation
-            (function(){
-                const originalLog=console.log;
-                Object.defineProperty(window,"setCoins",{writable:false,configurable:false});
-                Object.defineProperty(window,"setXp",{writable:false,configurable:false});
-                Object.defineProperty(window,"setTier",{writable:false,configurable:false});
-                Object.defineProperty(window,"setLvl",{writable:false,configurable:false});
-            })();
-            
-            // localStorage Validation
-            const originalSetItem=Storage.prototype.setItem;
-            Storage.prototype.setItem=function(key,value){
-                if(key&&(key.endsWith('-data')||key.endsWith('-data-backup'))){
-                    try{
-                        const data=JSON.parse(value);
-                        if(data.coins<0)data.coins=0;
-                        if(data.xp<0)data.xp=0;
-                        if(data.tier>41)data.tier=41;
-                        if(data.lvl>5)data.lvl=5;
-                        value=JSON.stringify(data);
-                    }catch(e){}
-                }
-                return originalSetItem.call(this,key,value);
-            };
-            
-            // DevTools Detection
-            setInterval(()=>{
-                if(window.outerWidth-window.innerWidth>APP_CONFIG.security.devtoolsThresholdPx||window.outerHeight-window.innerHeight>APP_CONFIG.security.devtoolsThresholdPx){
-                    console.clear();
-                }
-            },1000);
+            const didInitSecurityRuntime=useRef(false);
 
-            // Trusted time: run clock tamper detection silently on mount
-            useEffect(()=>{detectClockTampering();},[]);
+            useEffect(()=>{
+                if(didInitSecurityRuntime.current)return;
+                didInitSecurityRuntime.current=true;
+
+                // Prevent direct global setter hijacking
+                ['setCoins','setXp','setTier','setLvl'].forEach(name=>{
+                    try{Object.defineProperty(window,name,{writable:false,configurable:false});}catch(e){}
+                });
+
+                // localStorage Validation (patch once)
+                if(!window.__pivtStorageGuardPatched){
+                    const originalSetItem=Storage.prototype.setItem;
+                    Storage.prototype.setItem=function(key,value){
+                        if(key&&(key.endsWith('-data')||key.endsWith('-data-backup'))){
+                            try{
+                                const data=JSON.parse(value);
+                                if(data.coins<0)data.coins=0;
+                                if(data.xp<0)data.xp=0;
+                                if(data.tier>41)data.tier=41;
+                                if(data.lvl>5)data.lvl=5;
+                                value=JSON.stringify(data);
+                            }catch(e){}
+                        }
+                        return originalSetItem.call(this,key,value);
+                    };
+                    window.__pivtStorageGuardPatched=true;
+                }
+
+                // DevTools Detection
+                const devtoolsInterval=setInterval(()=>{
+                    if(window.outerWidth-window.innerWidth>APP_CONFIG.security.devtoolsThresholdPx||window.outerHeight-window.innerHeight>APP_CONFIG.security.devtoolsThresholdPx){
+                        console.clear();
+                    }
+                },1000);
+
+                // Trusted time: run clock tamper detection silently on mount
+                detectClockTampering();
+
+                return ()=>clearInterval(devtoolsInterval);
+            },[]);
             
             const [user,setUser]=useState(null);
             const [appTheme,setAppTheme]=useState('dark');
@@ -886,6 +899,18 @@
                 add('ELO feature ready',typeof elo==='number'&&Array.isArray(eloHistory));
                 add('Timezone feature ready',typeof timeZone==='string');
                 add('Achievements feature ready',Array.isArray(achList)&&Array.isArray(achs));
+                add('Signup validator active',typeof validateUsername==='function'&&typeof validateEmail==='function'&&typeof validatePassword==='function');
+                add('Save/load pipeline active',typeof saveData==='function'&&typeof loadData==='function');
+                add('Session timeout guard active',APP_CONFIG.sessionTimeoutMs>=300000);
+                add('Rate limiter active',typeof checkRateLimit==='function'&&typeof recordLoginAttempt==='function');
+                add('Security banner available',typeof setSecurityBanner==='function');
+                add('Trade engine active',typeof sendTradeOffer==='function'&&typeof acceptTradeOffer==='function');
+                add('Challenge engine active',typeof sendBattleChallenge==='function'&&typeof acceptChallenge==='function');
+                add('Focus timer ref active',Boolean(focusTimerRef));
+                add('Animation classes injected',document.querySelectorAll('[class*="animate-"]').length>10);
+                add('UI cards include motion-safe transitions',document.querySelectorAll('.ui-card').length>=1);
+                add('Social persistence active',typeof readSocial==='function'&&typeof writeSocial==='function');
+                add('Avatar renderer active',typeof renderAvatar==='function');
                 const passCount=checks.filter(c=>c.pass).length;
                 console.info(`✅ Full Feature Audit: ${passCount}/${checks.length} checks passed`,checks);
                 return {passCount,total:checks.length,checks};
@@ -1527,12 +1552,24 @@
             };
 
             const renderAvatar=(username,avatar,size='md')=>{
-                const sizes={sm:'w-8 h-8',md:'w-10 h-10',lg:'w-14 h-14'};
+                const sizes={sm:'w-8 h-8 text-sm',md:'w-10 h-10 text-lg',lg:'w-14 h-14 text-xl'};
                 const sizeClass=sizes[size]||sizes.md;
-                if(avatar){
-                    return <img src={avatar} alt={`${username||'user'} avatar`} className={`${sizeClass} rounded-full object-cover border border-cyan-400/50 bg-gray-900`}/>;
+                const initial=(username||'?')[0]?.toUpperCase?.()||'?';
+                if(!avatar){
+                    return <div className={`${sizeClass} rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center font-black`}>{initial}</div>;
                 }
-                return <div className={`${sizeClass} rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center font-black text-lg`}>{(username||'?')[0]?.toUpperCase?.()||'?'}</div>;
+                return (
+                    <div className={`${sizeClass} rounded-full overflow-hidden border border-cyan-400/50 bg-gray-900 relative`}>
+                        <img
+                            src={avatar}
+                            alt={`${username||'user'} avatar`}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(e)=>{e.currentTarget.style.display='none';const fallback=e.currentTarget.nextElementSibling;if(fallback)fallback.style.display='flex';}}
+                        />
+                        <div className="hidden w-full h-full bg-gradient-to-br from-purple-600 to-blue-600 items-center justify-center font-black">{initial}</div>
+                    </div>
+                );
             };
 
             const chooseRandomUsername=()=>{
@@ -4518,7 +4555,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                             </div>
                         </div>
 
-                        {showCustom&&<div className="bg-gray-800 rounded-2xl p-6 mb-6 border border-gray-700 animate-slideDown"><h3 className="text-2xl font-bold mb-4 flex items-center gap-2"><Sparkles/><span>Customize</span></h3><div className="mb-6"><p className="text-sm text-gray-400 mb-3">Characters</p><div className="grid grid-cols-5 md:grid-cols-10 gap-3">{allChars.map((c,i)=><button key={i} onClick={()=>setCharIdx(i)} className={`text-4xl p-4 rounded-xl transition-all transform hover:scale-110 ${charIdx===i?`bg-gradient-to-r ${ctheme.p} shadow-lg`:'bg-gray-700 hover:bg-gray-600'}`}>{c}</button>)}</div></div><div className="mb-6"><p className="text-sm text-gray-400 mb-3">Themes</p><div className="grid grid-cols-2 md:grid-cols-5 gap-3">{[...themes,...customThemes].map((t,i)=><button key={i} onClick={()=>setTheme(i)} className={`px-4 py-3 rounded-xl font-bold transition-all transform hover:scale-105 ${theme===i?'ring-4 ring-white':''} bg-gradient-to-r ${t.p} ${t.anim||''}`}>{t.n}</button>)}</div></div><div className="mb-6"><p className="text-sm text-gray-400 mb-3">Titles</p><div className="grid grid-cols-2 md:grid-cols-3 gap-3"><button onClick={()=>setCurrentTitle('')} className={`px-4 py-3 rounded-xl font-bold transition-all ${currentTitle===''?'bg-cyan-600':'bg-gray-700 hover:bg-gray-600'}`}>None</button>{shopItems.filter(item=>item.type==='title'&&owned.includes(item.id)).map(item=><button key={item.id} onClick={()=>setCurrentTitle(item.title)} className={`px-4 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${currentTitle===item.title?'bg-cyan-600':'bg-gray-700 hover:bg-gray-600'}`}><span>{item.icon}</span><span>{item.title}</span></button>)}</div></div><div><p className="text-sm text-gray-400 mb-3">Borders</p><div className="grid grid-cols-2 md:grid-cols-4 gap-3"><button onClick={()=>setCurrentBorder('')} className={`px-4 py-3 rounded-xl font-bold transition-all ${currentBorder===''?'bg-cyan-600':'bg-gray-700 hover:bg-gray-600'}`}>None</button>{shopItems.filter(item=>item.type==='border'&&owned.includes(item.id)).map(item=><button key={item.id} onClick={()=>setCurrentBorder(item.border)} className={`px-4 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${currentBorder===item.border?'bg-cyan-600':'bg-gray-700 hover:bg-gray-600'}`}><span>{item.icon}</span><span>{item.n}</span></button>)}</div></div></div>}
+                        {showCustom&&<div className="bg-gray-800 rounded-2xl p-6 mb-6 border border-gray-700 animate-slideDown"><h3 className="text-2xl font-bold mb-4 flex items-center gap-2"><Sparkles/><span>Customize</span></h3><div className="mb-6"><p className="text-sm text-gray-400 mb-3">Characters</p><div className="grid grid-cols-5 md:grid-cols-10 gap-3">{allChars.map((c,i)=><button key={i} onClick={()=>setCharIdx(i)} className={`text-4xl p-4 rounded-xl ui-card transition-all transform hover:scale-110 ${charIdx===i?`bg-gradient-to-r ${ctheme.p} shadow-lg`:'bg-gray-700 hover:bg-gray-600'}`}>{c}</button>)}</div></div><div className="mb-6"><p className="text-sm text-gray-400 mb-3">Themes</p><div className="grid grid-cols-2 md:grid-cols-5 gap-3">{[...themes,...customThemes].map((t,i)=><button key={i} onClick={()=>setTheme(i)} className={`px-4 py-3 rounded-xl font-bold transition-all transform hover:scale-105 ${theme===i?'ring-4 ring-white':''} bg-gradient-to-r ${t.p} ${t.anim||''}`}>{t.n}</button>)}</div></div><div className="mb-6"><p className="text-sm text-gray-400 mb-3">Titles</p><div className="grid grid-cols-2 md:grid-cols-3 gap-3"><button onClick={()=>setCurrentTitle('')} className={`px-4 py-3 rounded-xl font-bold transition-all ${currentTitle===''?'bg-cyan-600':'bg-gray-700 hover:bg-gray-600'}`}>None</button>{shopItems.filter(item=>item.type==='title'&&owned.includes(item.id)).map(item=><button key={item.id} onClick={()=>setCurrentTitle(item.title)} className={`px-4 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${currentTitle===item.title?'bg-cyan-600':'bg-gray-700 hover:bg-gray-600'}`}><span>{item.icon}</span><span>{item.title}</span></button>)}</div></div><div><p className="text-sm text-gray-400 mb-3">Borders</p><div className="grid grid-cols-2 md:grid-cols-4 gap-3"><button onClick={()=>setCurrentBorder('')} className={`px-4 py-3 rounded-xl font-bold transition-all ${currentBorder===''?'bg-cyan-600':'bg-gray-700 hover:bg-gray-600'}`}>None</button>{shopItems.filter(item=>item.type==='border'&&owned.includes(item.id)).map(item=><button key={item.id} onClick={()=>setCurrentBorder(item.border)} className={`px-4 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${currentBorder===item.border?'bg-cyan-600':'bg-gray-700 hover:bg-gray-600'}`}><span>{item.icon}</span><span>{item.n}</span></button>)}</div></div></div>}
 
                         <div className="grid md:grid-cols-2 gap-6">
                             <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700 animate-slideUp">
@@ -5445,7 +5482,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                     
                                     <div className="space-y-4">
                                         {/* Theme Toggle */}
-                                        <div className={`p-4 rounded-xl ${appTheme==='dark'?'bg-gray-700/50':'bg-gray-100'}`}>
+                                        <div className={`p-4 rounded-xl ui-card ${appTheme==='dark'?'bg-gray-700/50':'bg-gray-100'}`}>
                                             <div className="flex items-center justify-between">
                                                 <div>
                                                     <p className={`font-bold ${appTheme==='dark'?'text-white':'text-gray-900'}`}>
@@ -5465,7 +5502,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                         </div>
 
                                         {/* Timezone Selector */}
-                                        <div className={`p-4 rounded-xl animate-tz-highlight ${appTheme==='dark'?'bg-gray-700/50 border border-cyan-500/30':'bg-gray-100 border border-cyan-400/30'}`}>
+                                        <div className={`p-4 rounded-xl ui-card animate-tz-highlight ${appTheme==='dark'?'bg-gray-700/50 border border-cyan-500/30':'bg-gray-100 border border-cyan-400/30'}`}>
                                             <div className="flex items-center gap-2 mb-2">
                                                 <Clock/>
                                                 <span className={`font-bold ${appTheme==='dark'?'text-white':'text-gray-900'}`}>🌐 Time Zone</span>
@@ -5477,7 +5514,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                         </div>
                                         
                                         {/* Account Info */}
-                                        <div className={`p-4 rounded-xl ${appTheme==='dark'?'bg-gray-700/50':'bg-gray-100'}`}>
+                                        <div className={`p-4 rounded-xl ui-card ${appTheme==='dark'?'bg-gray-700/50':'bg-gray-100'}`}>
                                             <div className="flex items-center gap-3 mb-2">
                                                 {renderAvatar(user,profilePic,'lg')}
                                                 <div>
@@ -5498,7 +5535,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                         </div>
                                         
                                         {/* Quick Stats */}
-                                        <div className={`p-4 rounded-xl ${appTheme==='dark'?'bg-gray-700/50':'bg-gray-100'}`}>
+                                        <div className={`p-4 rounded-xl ui-card ${appTheme==='dark'?'bg-gray-700/50':'bg-gray-100'}`}>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
                                                     <p className={`text-sm ${appTheme==='dark'?'text-gray-400':'text-gray-600'}`}>Total XP</p>
