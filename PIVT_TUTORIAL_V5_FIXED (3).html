@@ -1426,6 +1426,7 @@
                 const acc=accountKey?S.get(accountKey):null;
                 if(!acc?.value)return setAuthErr('Account not found');
                 const a=JSON.parse(acc.value);
+                const canonicalUsername=sanitizeInput(a.username||username,20)||username;
                 if((a.email||'').toLowerCase()!==email)return setAuthErr('Email doesn\'t match account');
 
                 if(forgotOtpMeta&&forgotOtpMeta.sentAt&&(getTrustedTime()-forgotOtpMeta.sentAt)<APP_CONFIG.otp.resendCooldownMs){
@@ -1436,7 +1437,7 @@
                 const otp=generateSecureOtp();
                 const salt=generateOtpSalt();
                 const expires=getTrustedTime()+APP_CONFIG.otp.expiryMs;
-                const otpHash=hashOtp(otp,email,username,salt);
+                const otpHash=hashOtp(otp,email,canonicalUsername,salt);
 
                 const emailjsReady=(
                     typeof emailjs!=='undefined'&&
@@ -1447,7 +1448,7 @@
 
                 if(!emailjsReady){
                     // Demo fallback — show OTP in a large clear modal
-                    setForgotOtpMeta({otpHash,salt,expires,attempts:0,username,email,sentAt:getTrustedTime()});
+                    setForgotOtpMeta({otpHash,salt,expires,attempts:0,username:canonicalUsername,email,sentAt:getTrustedTime()});
                     setOtpModal({code:otp,expires,email});
                     setResetMsg('✅ Your OTP code has been generated! Copy it from the box above and paste it below.');
                     return;
@@ -1462,22 +1463,31 @@
                         EMAILJS_TEMPLATE_ID,
                         {
                             to_email:   email,
-                            to_name:    username,
+                            to_name:    canonicalUsername,
+                            user_email: email,
+                            user_name:  canonicalUsername,
+                            from_name:  'P.I.V.T Security',
+                            reply_to:   'parthbaghele@gmail.com',
                             otp_code:   otp,
                             app_name:   'P.I.V.T',
                             expires_in: `${Math.round(APP_CONFIG.otp.expiryMs/60000)} minutes`
                         },
                         {publicKey: EMAILJS_PUBLIC_KEY}
                     );
-                    setForgotOtpMeta({otpHash,salt,expires,attempts:0,username,email,sentAt:getTrustedTime()});
+                    setForgotOtpMeta({otpHash,salt,expires,attempts:0,username:canonicalUsername,email,sentAt:getTrustedTime()});
                     setResetMsg('✅ OTP sent to your email! Check your inbox — and your spam/junk folder if you don\'t see it within a minute. The email comes from parthbaghele@gmail.com.');
                 }catch(err){
                     console.error('EmailJS error:',err);
                     const status=err?.status||0;
-                    if(status===400)setAuthErr('Email delivery failed: check your EmailJS template variables match exactly.');
+                    const detail=(err?.text||err?.message||'').toString();
+                    if(status===400)setAuthErr(`Email delivery failed (400): check EmailJS template vars. ${detail}`.trim());
                     else if(status===401||status===403)setAuthErr('Email delivery failed: invalid EmailJS Public Key. Double-check it.');
                     else if(status===429)setAuthErr('Too many emails sent — EmailJS free tier limit hit. Wait a few minutes.');
                     else setAuthErr('Failed to send OTP. Check your internet connection and try again.');
+                    // Graceful fallback so password reset flow still works when provider is down/misconfigured
+                    setForgotOtpMeta({otpHash,salt,expires,attempts:0,username:canonicalUsername,email,sentAt:getTrustedTime()});
+                    setOtpModal({code:otp,expires,email});
+                    setResetMsg('⚠️ Email send failed, but OTP was generated locally so you can continue now.');
                 }finally{
                     setOtpSending(false);
                 }
@@ -1767,7 +1777,8 @@
                 if(getTrustedTime()>forgotOtpMeta.expires)return setAuthErr('OTP expired. Request a new OTP');
                 if((forgotOtpMeta.attempts||0)>=APP_CONFIG.otp.maxAttempts)return setAuthErr('Too many OTP attempts. Request a new OTP');
 
-                const expectedHash=hashOtp(otp,email,username,forgotOtpMeta.salt);
+                const otpUsername=forgotOtpMeta.username||username;
+                const expectedHash=hashOtp(otp,email,otpUsername,forgotOtpMeta.salt);
                 if(expectedHash!==forgotOtpMeta.otpHash){
                     setForgotOtpMeta(prev=>prev?{...prev,attempts:(prev.attempts||0)+1}:prev);
                     return setAuthErr('Invalid OTP code');
@@ -1776,11 +1787,12 @@
                 const passwordCheck=validatePassword(authForm.password);
                 if(!passwordCheck.valid)return setAuthErr(passwordCheck.error);
 
-                const accountKey=getAccountKeyByUsername(username);
+                const accountKey=getAccountKeyByUsername(otpUsername);
                 const acc=accountKey?S.get(accountKey):null;
                 if(!acc?.value)return setAuthErr('Account not found');
 
                 const a=JSON.parse(acc.value);
+                const canonicalUsername=sanitizeInput(a.username||username,20)||username;
                 if((a.email||'').toLowerCase()!==email)return setAuthErr('Email doesn\'t match account');
 
                 a.password=hashPassword(authForm.password);
