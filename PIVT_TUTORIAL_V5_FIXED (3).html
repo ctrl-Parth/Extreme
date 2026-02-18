@@ -98,6 +98,9 @@
         @keyframes dueDatePulse{0%,100%{background-color:rgba(239,68,68,0.12)}50%{background-color:rgba(239,68,68,0.28)}}
         @keyframes settingsTzHighlight{0%{box-shadow:0 0 0 0 rgba(34,211,238,0)}50%{box-shadow:0 0 0 4px rgba(34,211,238,0.35)}100%{box-shadow:0 0 0 0 rgba(34,211,238,0)}}
         @keyframes antiCheatWarn{0%{opacity:0;transform:scale(0.8)}40%{opacity:1;transform:scale(1.04)}100%{opacity:0;transform:scale(1);display:none}}
+        @keyframes quantumDrift{0%,100%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-4px) rotate(0.6deg)}50%{transform:translateY(2px) rotate(-0.4deg)}75%{transform:translateY(-2px) rotate(0.3deg)}}
+        @keyframes glitchWave{0%,100%{clip-path:inset(0 0 0 0)}20%{clip-path:inset(10% 0 35% 0)}40%{clip-path:inset(45% 0 5% 0)}60%{clip-path:inset(5% 0 55% 0)}80%{clip-path:inset(30% 0 20% 0)}}
+        @keyframes auroraSpin{0%{filter:hue-rotate(0deg)}50%{filter:hue-rotate(110deg)}100%{filter:hue-rotate(360deg)}}
         .animate-task-hover:hover{animation:taskHoverPop 0.3s ease-out forwards}
         .animate-border-glow{animation:borderGlow 3s ease-in-out infinite}
         .animate-xp-fill{animation:xpBarFill 1.2s ease-out}
@@ -107,12 +110,15 @@
         .animate-task-complete-v2{animation:taskCompleteV2 0.55s ease-out}
         .animate-due-pulse{animation:dueDatePulse 1.8s ease-in-out infinite}
         .animate-tz-highlight{animation:settingsTzHighlight 1.5s ease-out}
+        .animate-quantum{animation:quantumDrift 3.6s ease-in-out infinite}
+        .animate-glitch-wave{animation:glitchWave 1.1s steps(2,end) infinite}
+        .animate-aurora-spin{animation:auroraSpin 8s linear infinite}
 
     </style>
     </head>
 <body>
     <div id="root">
-        <div style="min-height:100vh;background:linear-gradient(135deg,#1f2937 0%,#581c87 50%,#000 100%);color:white;display:flex;align-items:center;justify-center;padding:2rem;font-family:system-ui,sans-serif">
+        <div style="min-height:100vh;background:linear-gradient(135deg,#1f2937 0%,#581c87 50%,#000 100%);color:white;display:flex;align-items:center;justify-content:center;padding:2rem;font-family:system-ui,sans-serif">
             <div style="text-align:center;max-width:400px">
                 <div style="font-size:5rem;margin-bottom:1.5rem;animation:spin 2s linear infinite">⚙️</div>
                 <h2 style="font-size:2rem;font-weight:bold;margin-bottom:1rem;background:linear-gradient(to right,#22d3ee,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Loading P.I.V.T...</h2>
@@ -528,6 +534,23 @@
         const EMAILJS_SERVICE_ID  = 'service_7wiudxn';            // ✅ already filled in
         const EMAILJS_TEMPLATE_ID = 'template_a5g6hul';           // ✅ set
 
+        const APP_CONFIG={
+            otp:{
+                expiryMs:10*60*1000,
+                resendCooldownMs:60*1000,
+                maxAttempts:5
+            },
+            battle:{
+                pollFastMs:10000,
+                pollIdleMs:30000,
+                maxSearchResults:10
+            },
+            music:{
+                defaultVolume:70,
+                autoplayOnTrackChange:true
+            }
+        };
+
         // Initialize EmailJS once on load
         if(typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_EMAILJS_PUBLIC_KEY' && EMAILJS_PUBLIC_KEY !== ''){
             emailjs.init({publicKey: EMAILJS_PUBLIC_KEY});
@@ -586,6 +609,9 @@
             const [forgotOtpMeta,setForgotOtpMeta]=useState(null);
             const [otpSending,setOtpSending]=useState(false);
             const [otpModal,setOtpModal]=useState(null); // {code, expires} for on-screen OTP display
+            const [authShakeKey,setAuthShakeKey]=useState(0);
+            const [securityMode,setSecurityMode]=useState('normal');
+            const [securityBanner,setSecurityBanner]=useState(null);
             const [tasks,setTasks]=useState([]);
             const [xp,setXp]=useState(0);
             const [totalXp,setTotalXp]=useState(0);
@@ -621,6 +647,8 @@
             const [friends,setFriends]=useState([]);
             const [friendRequests,setFriendRequests]=useState([]);
             const [challenges,setChallenges]=useState([]);
+            const [elo,setElo]=useState(0);
+            const [eloHistory,setEloHistory]=useState([]);
             const [tradeOffers,setTradeOffers]=useState([]);
             const [showBattle,setShowBattle]=useState(false);
             const [battleTab,setBattleTab]=useState('friends');
@@ -632,8 +660,10 @@
             const [showSeasonComplete,setShowSeasonComplete]=useState(null);
             const [musicEnabled,setMusicEnabled]=useState(false);
             const [musicPlaying,setMusicPlaying]=useState(false);
-            const [musicVolume,setMusicVolume]=useState(70);
+            const [musicVolume,setMusicVolume]=useState(APP_CONFIG.music.defaultVolume);
             const [selectedTrackIndex,setSelectedTrackIndex]=useState(0);
+            const [musicMood,setMusicMood]=useState('all');
+            const [musicAutoplay,setMusicAutoplay]=useState(APP_CONFIG.music.autoplayOnTrackChange);
             const [deletedTasks,setDeletedTasks]=useState([]);
             const [showDeletedTasks,setShowDeletedTasks]=useState(false);
             const [taskAnimation,setTaskAnimation]=useState({});
@@ -666,14 +696,45 @@
             const focusEndAtRef=useRef(0);
             const focusTimerRef=useRef(null);
             const audioRef=useRef(null);
+            const previousTrackIdRef=useRef(null);
 
             const focusTracks=[
-                {name:'Morning Energy',artist:'Audio Library',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'},
-                {name:'Calm Workspace',artist:'Audio Library',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3'},
-                {name:'Deep Concentration',artist:'Audio Library',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3'},
-                {name:'Night Study',artist:'Audio Library',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'},
-                {name:'Ambient Flow',artist:'Audio Library',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3'}
+                {id:'energy-1',name:'Morning Energy',artist:'SoundHelix',mood:'energy',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'},
+                {id:'calm-1',name:'Calm Workspace',artist:'SoundHelix',mood:'calm',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3'},
+                {id:'deep-1',name:'Deep Concentration',artist:'SoundHelix',mood:'deep',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3'},
+                {id:'night-1',name:'Night Study',artist:'SoundHelix',mood:'night',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'},
+                {id:'ambient-1',name:'Ambient Flow',artist:'SoundHelix',mood:'ambient',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3'},
+                {id:'focus-1',name:'Focus Rain',artist:'Pixabay',mood:'calm',url:'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=rain-ambient-110987.mp3'},
+                {id:'lounge-1',name:'Lo-Fi Sprint',artist:'Pixabay',mood:'energy',url:'https://cdn.pixabay.com/download/audio/2022/10/25/audio_946f4f38aa.mp3?filename=lofi-study-112191.mp3'},
+                {id:'space-1',name:'Cosmic Drift',artist:'Pixabay',mood:'deep',url:'https://cdn.pixabay.com/download/audio/2022/03/24/audio_5f4b9c2af5.mp3?filename=ambient-piano-amp-strings-10711.mp3'}
             ];
+
+            const availableMoods=['all',...new Set(focusTracks.map(t=>t.mood||'other'))];
+            const visibleTracks=musicMood==='all'?focusTracks:focusTracks.filter(t=>t.mood===musicMood);
+            const selectedVisibleIndex=Math.max(0,visibleTracks.findIndex(t=>t.id===focusTracks[selectedTrackIndex]?.id));
+            const selectedTrack=visibleTracks[selectedVisibleIndex]||visibleTracks[0]||focusTracks[0];
+
+            const setTrackById=(trackId)=>{
+                const idx=focusTracks.findIndex(t=>t.id===trackId);
+                if(idx>=0)setSelectedTrackIndex(idx);
+            };
+
+            const shiftVisibleTrack=(delta)=>{
+                if(!visibleTracks.length)return;
+                const current=Math.max(0,visibleTracks.findIndex(t=>t.id===selectedTrack?.id));
+                const next=(current+delta+visibleTracks.length)%visibleTracks.length;
+                const nextTrack=visibleTracks[next];
+                if(nextTrack)setTrackById(nextTrack.id);
+            };
+
+            const pickRandomTrack=()=>{
+                if(!visibleTracks.length)return;
+                if(visibleTracks.length===1)return setTrackById(visibleTracks[0].id);
+                const currentId=selectedTrack?.id;
+                const pool=visibleTracks.filter(t=>t.id!==currentId);
+                const choice=pool[Math.floor(Math.random()*pool.length)]||visibleTracks[0];
+                if(choice)setTrackById(choice.id);
+            };
 
             const normalizeBoosterType=(type)=>{
                 if(type==='xp'||type==='xp_boost')return'xp';
@@ -720,6 +781,65 @@
                 if(h>0)return `${h}h ${m}m`;
                 if(m>0)return `${m}m ${sec}s`;
                 return `${sec}s`;
+            };
+
+            const runBugChecks=()=>{
+                const checks=[];
+                const addCheck=(name,condition)=>checks.push({name,pass:Boolean(condition)});
+                addCheck('Firebase URL configured',Boolean(FIREBASE_DB_URL&&FIREBASE_DB_URL.startsWith('https://')));
+                addCheck('Firebase URL safe format',!String(FIREBASE_DB_URL||'').includes('YOUR_FIREBASE'));
+                addCheck('EmailJS public key configured',Boolean(EMAILJS_PUBLIC_KEY&&EMAILJS_PUBLIC_KEY!=='YOUR_EMAILJS_PUBLIC_KEY'));
+                addCheck('EmailJS service configured',Boolean(EMAILJS_SERVICE_ID&&EMAILJS_SERVICE_ID!=='YOUR_SERVICE_ID'));
+                addCheck('EmailJS template configured',Boolean(EMAILJS_TEMPLATE_ID&&EMAILJS_TEMPLATE_ID!=='YOUR_TEMPLATE_ID'));
+                addCheck('OTP expiry >= 5 min',APP_CONFIG.otp.expiryMs>=300000);
+                addCheck('OTP expiry <= 20 min',APP_CONFIG.otp.expiryMs<=1200000);
+                addCheck('OTP cooldown >= 30 sec',APP_CONFIG.otp.resendCooldownMs>=30000);
+                addCheck('OTP attempts >= 3',APP_CONFIG.otp.maxAttempts>=3);
+                addCheck('Battle fast polling >= 5s',APP_CONFIG.battle.pollFastMs>=5000);
+                addCheck('Battle idle polling >= 10s',APP_CONFIG.battle.pollIdleMs>=10000);
+                addCheck('Search results cap <= 20',APP_CONFIG.battle.maxSearchResults<=20);
+                addCheck('Music default volume valid',APP_CONFIG.music.defaultVolume>=0&&APP_CONFIG.music.defaultVolume<=100);
+                addCheck('Focus tracks >= 5',focusTracks.length>=5);
+                addCheck('Focus tracks include calm mood',focusTracks.some(t=>t.mood==='calm'));
+                addCheck('Focus tracks include energy mood',focusTracks.some(t=>t.mood==='energy'));
+                addCheck('Focus tracks include deep mood',focusTracks.some(t=>t.mood==='deep'));
+                addCheck('Track IDs unique',new Set(focusTracks.map(t=>t.id)).size===focusTracks.length);
+                addCheck('Track URLs are https',focusTracks.every(t=>String(t.url||'').startsWith('https://')));
+                addCheck('Track artist provided',focusTracks.every(t=>Boolean(t.artist)));
+                addCheck('Track mood provided',focusTracks.every(t=>Boolean(t.mood)));
+                addCheck('Visible track selection works',Boolean(selectedTrack&&selectedTrack.id));
+                addCheck('User object nullable',user===null||typeof user==='string');
+                addCheck('Tasks array type',Array.isArray(tasks));
+                addCheck('Goals array type',Array.isArray(goals));
+                addCheck('Habits array type',Array.isArray(habits));
+                addCheck('Challenges array type',Array.isArray(challenges));
+                addCheck('Trade offers array type',Array.isArray(tradeOffers));
+                addCheck('Friends array type',Array.isArray(friends));
+                addCheck('Friend requests array type',Array.isArray(friendRequests));
+                addCheck('Leaderboard array type',Array.isArray(leaderboard));
+                addCheck('Activity log array type',Array.isArray(activityLog));
+                addCheck('Coins non-negative',Number(coins)>=0);
+                addCheck('XP non-negative',Number(xp)>=0);
+                addCheck('Total XP non-negative',Number(totalXp)>=0);
+                addCheck('Level within bounds',Number(lvl)>=1&&Number(lvl)<=5);
+                addCheck('Tier within bounds',Number(tier)>=0&&Number(tier)<=41);
+                addCheck('Volume in bounds',musicVolume>=0&&musicVolume<=100);
+                addCheck('Selected track index valid',selectedTrackIndex>=0&&selectedTrackIndex<focusTracks.length);
+                addCheck('Auth form has OTP field',Object.prototype.hasOwnProperty.call(authForm,'otp'));
+                addCheck('Username validator exists',typeof validateUsername==='function');
+                addCheck('Password hash exists',typeof hashPassword==='function');
+                addCheck('Sanitizer exists',typeof sanitizeInput==='function');
+                addCheck('Trusted time function exists',typeof getTrustedTime==='function');
+                addCheck('Storage helper exists',typeof S.get==='function'&&typeof S.set==='function');
+                addCheck('Firebase helper exists',typeof FB.get==='function'&&typeof FB.set==='function');
+                addCheck('OTP modal state ready',otpModal===null||typeof otpModal==='object');
+                addCheck('Forgot OTP metadata state ready',forgotOtpMeta===null||typeof forgotOtpMeta==='object');
+                addCheck('Config object frozen shape',Boolean(APP_CONFIG.otp&&APP_CONFIG.battle&&APP_CONFIG.music));
+                addCheck('Mood list includes all',availableMoods.includes('all'));
+
+                const passed=checks.filter(c=>c.pass).length;
+                console.info(`🧪 P.I.V.T Bug Checks: ${passed}/${checks.length} passed`);
+                return checks;
             };
 
             const tiers=[
@@ -1002,6 +1122,8 @@
                     setFriends(data.friends||[]);
                     setFriendRequests(data.friendRequests||[]);
                     setChallenges(data.challenges||[]);
+                    setElo(Math.max(0,data.elo||0));
+                    setEloHistory(Array.isArray(data.eloHistory)?data.eloHistory:[]);
                     setTradeOffers(data.tradeOffers||[]);
                     setHabits(data.habits||[]);
                     setGoals(data.goals||[]);
@@ -1033,7 +1155,7 @@
                     .filter(b=>b&&sanitizeBoosterExpiry(b.expires)>trustedNow)
                     .map(b=>({...b,expires:sanitizeBoosterExpiry(b.expires),type:normalizeBoosterType(b.type)}));
                 // Social data (friends, challenges, tradeOffers) stored separately in -social key
-                const data={tasks,xp,totalXp,coins,lvl,tier,season,charIdx,theme,stats,owned,achs,activeBoosters:sanitizedBoosters,currentTitle,currentBorder,currentEffect,specialChars,customThemes,activityLog,friends,friendRequests,challenges,tradeOffers,habits,goals,tutorialCompleted,timeZone};
+                const data={tasks,xp,totalXp,coins,lvl,tier,season,charIdx,theme,stats,owned,achs,activeBoosters:sanitizedBoosters,currentTitle,currentBorder,currentEffect,specialChars,customThemes,activityLog,friends,friendRequests,challenges,elo,eloHistory,tradeOffers,habits,goals,tutorialCompleted,timeZone};
                 const payload=JSON.stringify(data);
                 S.set(`user-${user}-data`,payload);
                 S.set(`user-${user}-data-backup`,payload);
@@ -1126,14 +1248,14 @@
                 const a=JSON.parse(acc.value);
                 if((a.email||'').toLowerCase()!==email)return setAuthErr('Email doesn\'t match account');
 
-                if(forgotOtpMeta&&forgotOtpMeta.sentAt&&(Date.now()-forgotOtpMeta.sentAt)<60000){
-                    const secondsLeft=Math.ceil((60000-(Date.now()-forgotOtpMeta.sentAt))/1000);
+                if(forgotOtpMeta&&forgotOtpMeta.sentAt&&(getTrustedTime()-forgotOtpMeta.sentAt)<APP_CONFIG.otp.resendCooldownMs){
+                    const secondsLeft=Math.ceil((APP_CONFIG.otp.resendCooldownMs-(getTrustedTime()-forgotOtpMeta.sentAt))/1000);
                     return setAuthErr(`Please wait ${secondsLeft}s before requesting another OTP`);
                 }
 
                 const otp=generateSecureOtp();
                 const salt=generateOtpSalt();
-                const expires=Date.now()+(10*60*1000);
+                const expires=getTrustedTime()+APP_CONFIG.otp.expiryMs;
                 const otpHash=hashOtp(otp,email,username,salt);
 
                 const emailjsReady=(
@@ -1145,7 +1267,7 @@
 
                 if(!emailjsReady){
                     // Demo fallback — show OTP in a large clear modal
-                    setForgotOtpMeta({otpHash,salt,expires,attempts:0,username,email,sentAt:Date.now()});
+                    setForgotOtpMeta({otpHash,salt,expires,attempts:0,username,email,sentAt:getTrustedTime()});
                     setOtpModal({code:otp,expires,email});
                     setResetMsg('✅ Your OTP code has been generated! Copy it from the box above and paste it below.');
                     return;
@@ -1163,11 +1285,11 @@
                             to_name:    username,
                             otp_code:   otp,
                             app_name:   'P.I.V.T',
-                            expires_in: '10 minutes'
+                            expires_in: `${Math.round(APP_CONFIG.otp.expiryMs/60000)} minutes`
                         },
                         {publicKey: EMAILJS_PUBLIC_KEY}
                     );
-                    setForgotOtpMeta({otpHash,salt,expires,attempts:0,username,email,sentAt:Date.now()});
+                    setForgotOtpMeta({otpHash,salt,expires,attempts:0,username,email,sentAt:getTrustedTime()});
                     setResetMsg('✅ OTP sent to your email! Check your inbox — and your spam/junk folder if you don\'t see it within a minute. The email comes from parthbaghele@gmail.com.');
                 }catch(err){
                     console.error('EmailJS error:',err);
@@ -1215,6 +1337,40 @@
                 setTimeout(()=>setEpicRedeemAnim(null),3000);
             };
 
+            const triggerSecurityAlert=(message,mode='hardened')=>{
+                setSecurityMode(mode);
+                setSecurityBanner({message,mode,at:getTrustedTime()});
+                setAuthShakeKey(prev=>prev+1);
+                setTimeout(()=>setSecurityBanner(null),2600);
+            };
+
+            const getSessionFingerprint=()=>{
+                const tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
+                const ua=navigator.userAgent||'unknown';
+                const lang=navigator.language||'en';
+                const seed=`${tz}|${ua}|${lang}|${Math.floor((screen?.width||0)/100)}x${Math.floor((screen?.height||0)/100)}`;
+                return hashPassword(seed,'session-fingerprint-v2');
+            };
+
+            const generateSessionToken=()=>{
+                const bytes=new Uint8Array(24);
+                window.crypto.getRandomValues(bytes);
+                return Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join('');
+            };
+
+            const createTrustBadge=(username)=>hashPassword(`${username}-${getTrustedTime()}-${getSessionFingerprint()}`,'trust-badge').slice(0,14);
+
+            const applySecurityModeFromAttempts=(username)=>{
+                try{
+                    const attempts=getLoginAttempts();
+                    const key=(username||'').toLowerCase();
+                    const count=attempts[key]?.count||0;
+                    if(count>=4)setSecurityMode('lockdown');
+                    else if(count>=2)setSecurityMode('hardened');
+                    else setSecurityMode('normal');
+                }catch(e){setSecurityMode('normal');}
+            };
+
             const signup=()=>{
                 setAuthErr('');
                 const username=sanitizeInput(authForm.username,20);
@@ -1260,9 +1416,16 @@
                     createdAt:new Date().toISOString(),
                     lastLogin:new Date().toISOString(),
                     loginCount:1,
-                    accountStatus:'active'
+                    accountStatus:'active',
+                    securityMode:'normal',
+                    securityEvents:[],
+                    sessionToken:'',
+                    trustBadge:''
                 };
                 
+                accountData.sessionToken=generateSessionToken();
+                accountData.sessionFingerprint=getSessionFingerprint();
+                accountData.trustBadge=createTrustBadge(username);
                 S.set(`user-${username}-account`,JSON.stringify(accountData));
                 S.set('current-user',username);
                 setUser(username);
@@ -1301,9 +1464,12 @@
                 // Verify password (check both hashed and legacy plain text)
                 const inputHashed=hashPassword(authForm.password);
                 const passwordMatch=a.password===inputHashed||a.password===authForm.password;
+                applySecurityModeFromAttempts(username);
                 
                 if(!passwordMatch){
                     recordLoginAttempt(username.toLowerCase(),false);
+                    applySecurityModeFromAttempts(username);
+                    triggerSecurityAlert('🔒 Suspicious login detected. Security hardened.','hardened');
                     return setAuthErr('Invalid username or password');
                 }
                 
@@ -1316,12 +1482,29 @@
                 // Update account info
                 a.lastLogin=new Date().toISOString();
                 a.loginCount=(a.loginCount||0)+1;
+                const nowIso=new Date().toISOString();
+                const fp=getSessionFingerprint();
+                const prevFp=a.sessionFingerprint||null;
+                const fingerprintChanged=Boolean(prevFp&&prevFp!==fp);
+                a.securityEvents=Array.isArray(a.securityEvents)?a.securityEvents:[];
+                if(fingerprintChanged){
+                    a.securityEvents.unshift({type:'new_device_fingerprint',at:nowIso});
+                    a.securityEvents=a.securityEvents.slice(0,25);
+                    a.securityMode='hardened';
+                    triggerSecurityAlert('🛡️ New device signature detected. Security hardened for this login.','hardened');
+                }else{
+                    a.securityMode='normal';
+                }
+                a.sessionFingerprint=fp;
+                a.sessionToken=generateSessionToken();
+                a.trustBadge=createTrustBadge(canonicalUsername);
                 S.set(accountKey||`user-${canonicalUsername}-account`,JSON.stringify(a));
                 
                 // Successful login
                 recordLoginAttempt(username.toLowerCase(),true);
                 S.set('current-user',canonicalUsername);
                 setUser(canonicalUsername);
+                setSecurityMode(a.securityMode||'normal');
                 loadData(canonicalUsername);
                 setTimeout(()=>checkStreaks(),300);
                 setAuthForm({username:'',email:'',password:'',confirmPassword:'',otp:''});
@@ -1344,8 +1527,8 @@
 
                 if(!forgotOtpMeta)return setAuthErr('Generate an OTP first');
                 if((forgotOtpMeta.username||'').toLowerCase()!==username.toLowerCase()||(forgotOtpMeta.email||'').toLowerCase()!==email)return setAuthErr('OTP is tied to a different account request');
-                if(Date.now()>forgotOtpMeta.expires)return setAuthErr('OTP expired. Request a new OTP');
-                if((forgotOtpMeta.attempts||0)>=5)return setAuthErr('Too many OTP attempts. Request a new OTP');
+                if(getTrustedTime()>forgotOtpMeta.expires)return setAuthErr('OTP expired. Request a new OTP');
+                if((forgotOtpMeta.attempts||0)>=APP_CONFIG.otp.maxAttempts)return setAuthErr('Too many OTP attempts. Request a new OTP');
 
                 const expectedHash=hashOtp(otp,email,username,forgotOtpMeta.salt);
                 if(expectedHash!==forgotOtpMeta.otpHash){
@@ -1411,6 +1594,8 @@
                 setCurrentEffect('');
                 setSpecialChars([]);
                 setTimeZone(detectedTimeZone);
+                setSecurityMode('normal');
+                setSecurityBanner(null);
                 setAuthMode('welcome');
             };
 
@@ -1487,6 +1672,7 @@
                     username:user,tier,xp,totalXp,
                     streak:stats.currentStreak,
                     tasksCompleted:stats.tasksCompleted,
+                    elo:Math.max(0,elo||0),
                     lastSeen:getTrustedTime()
                 });
             };
@@ -1508,9 +1694,17 @@
                                 return merged;
                             });
                             setChallenges(prev=>{
-                                const myIds=new Set(prev.map(c=>c.id));
                                 const merged=[...prev];
-                                fbChallenges.forEach(c=>{if(!myIds.has(c.id))merged.push(c);});
+                                fbChallenges.forEach(incoming=>{
+                                    const idx=merged.findIndex(c=>c.id===incoming.id);
+                                    if(idx===-1)merged.push(incoming);
+                                    else{
+                                        const existing=merged[idx];
+                                        const incomingStamp=Number(incoming.completedAt||incoming.updatedAt||incoming.acceptedAt||incoming.createdAt||0);
+                                        const existingStamp=Number(existing.completedAt||existing.updatedAt||existing.acceptedAt||existing.createdAt||0);
+                                        if(incomingStamp>=existingStamp)merged[idx]={...existing,...incoming};
+                                    }
+                                });
                                 return merged;
                             });
                             setTradeOffers(prev=>{
@@ -1538,10 +1732,13 @@
                         return merged;
                     });
                     setChallenges(prev=>{
-                        const myIds=new Set(prev.map(c=>c.id));
                         const merged=[...prev];
-                        (mySocial.challenges||[]).filter(c=>c.status==='pending'&&c.opponent===user)
-                            .forEach(c=>{if(!myIds.has(c.id))merged.push(c);});
+                        (mySocial.challenges||[]).filter(c=>c.opponent===user||c.challenger===user)
+                            .forEach(incoming=>{
+                                const idx=merged.findIndex(c=>c.id===incoming.id);
+                                if(idx===-1)merged.push(incoming);
+                                else merged[idx]={...merged[idx],...incoming};
+                            });
                         return merged;
                     });
                     setTradeOffers(prev=>{
@@ -1582,7 +1779,7 @@
                         }catch(e){}
                     }
                 }
-                return results.slice(0,10);
+                return results.slice(0,APP_CONFIG.battle.maxSearchResults);
             };
 
             // ── FRIEND FUNCTIONS ──
@@ -1591,15 +1788,21 @@
                 const trimmed=(rawInput||'').trim();
                 if(!trimmed)return alert('Enter a username!');
                 const canonical=resolveUsername(trimmed);
-                if(!canonical){
+                let targetUser=canonical||null;
+                if(!targetUser){
                     if(FB.isReady()){
-                        const profile=await FB.getProfile(trimmed);
-                        if(!profile)return alert(`❌ Player "${trimmed}" not found.\n\nMake sure the username is spelled correctly (it's case-insensitive). They must have logged in at least once with Firebase configured.`);
+                        const allProfiles=await FB.getAllProfiles();
+                        const matched=allProfiles?Object.values(allProfiles).find(p=>(p.username||'').toLowerCase()===trimmed.toLowerCase()):null;
+                        if(!matched)return alert(`❌ Player "${trimmed}" not found.
+
+Make sure the username is spelled correctly (it's case-insensitive). They must have logged in at least once with Firebase configured.`);
+                        targetUser=matched.username;
                     }else{
-                        return alert(`❌ Player "${trimmed}" not found on this device.\n\n💡 Tip: Both players need to be on the SAME browser/device for same-device friend requests. For cross-device play, set up Firebase in the code!`);
+                        return alert(`❌ Player "${trimmed}" not found on this device.
+
+💡 Tip: Both players need to be on the SAME browser/device for same-device friend requests. For cross-device play, set up Firebase in the code!`);
                     }
                 }
-                const targetUser=canonical||trimmed;
                 if(targetUser.toLowerCase()===user.toLowerCase())return alert('❌ Cannot add yourself!');
                 if(friends.map(f=>f.toLowerCase()).includes(targetUser.toLowerCase()))return alert(`⚠️ Already friends with ${targetUser}!`);
                 const reqData={from:user,timestamp:getTrustedTime()};
@@ -1659,7 +1862,8 @@
                     challenger:user,opponent:friendUsername,taskGoal:goalInt,durationDays:durInt,
                     startDate:now,endDate:now+(durInt*24*60*60*1000),
                     challengerBaseline:stats.tasksCompleted,opponentBaseline:null,
-                    challengerProgress:0,opponentProgress:0,status:'pending',winner:null,createdAt:now
+                    challengerProgress:0,opponentProgress:0,status:'pending',winner:null,createdAt:now,
+                    challengerEloSnapshot:Math.max(0,elo||0),opponentEloSnapshot:null,eloAwarded:null,eloReason:''
                 };
                 setChallenges(prev=>[...prev,challenge]);
                 let sent=false;
@@ -1678,7 +1882,7 @@
                 const now=getTrustedTime();
                 setChallenges(prev=>prev.map(c=>{
                     if(c.id!==challengeId||c.status!=='pending')return c;
-                    const updated={...c,status:'active',opponentBaseline:stats.tasksCompleted,startDate:now,endDate:now+(c.durationDays*24*60*60*1000),acceptedAt:now};
+                    const updated={...c,status:'active',opponentBaseline:stats.tasksCompleted,startDate:now,endDate:now+(c.durationDays*24*60*60*1000),acceptedAt:now,opponentEloSnapshot:Math.max(0,elo||0)};
                     if(FB.isReady()){FB.writeInbox(c.challenger,'challenges',challengeId,updated);FB.deleteInbox(user,'challenges',challengeId);}
                     writeSocial(c.challenger,d=>{if(!d.challenges)d.challenges=[];d.challenges=d.challenges.map(dc=>dc.id===challengeId?updated:dc);return d;});
                     writeSocial(user,d=>{if(!d.challenges)d.challenges=[];d.challenges=d.challenges.map(dc=>dc.id===challengeId?updated:dc);return d;});
@@ -1692,34 +1896,60 @@
                 writeSocial(user,d=>{d.challenges=(d.challenges||[]).filter(c=>c.id!==challengeId);return d;});
             };
 
+            const aiChallengeEloDelta=(myElo,opponentElo,resultScore,challenge,myProgress,theirProgress)=>{
+                if(resultScore===0.5)return {delta:0,reason:'Draw: no ELO change'};
+                const expected=1/(1+Math.pow(10,(opponentElo-myElo)/400));
+                const challengeDifficulty=Math.min(14,Math.round((challenge.taskGoal||1)/18))+Math.min(10,Math.round((challenge.durationDays||1)/3));
+                const closeness=Math.max(0,myProgress-theirProgress);
+                const performanceBoost=Math.min(10,Math.round((closeness/Math.max(1,challenge.taskGoal||1))*14));
+                const k=20+challengeDifficulty;
+                const core=Math.round(k*(resultScore-expected));
+                const delta=resultScore===1?Math.max(8,core+performanceBoost):Math.min(-6,core-performanceBoost);
+                const reason=`AI rated this match: K=${k}, expected=${expected.toFixed(2)}, margin=${myProgress-theirProgress}`;
+                return {delta,reason};
+            };
+
+            const resolveChallengeOutcome=(challenge,now)=>{
+                const cp=Math.max(0,challenge.challengerProgress||0);
+                const op=Math.max(0,challenge.opponentProgress||0);
+                const goal=Math.max(1,challenge.taskGoal||1);
+                const reachedGoal=cp>=goal||op>=goal;
+                const timedOut=now>=Number(challenge.endDate||0);
+                if(!reachedGoal&&!timedOut)return null;
+                const winner=cp>op?challenge.challenger:op>cp?challenge.opponent:'tie';
+                const challengerElo=Math.max(0,challenge.challengerEloSnapshot||0);
+                const opponentElo=Math.max(0,challenge.opponentEloSnapshot||0);
+                const challengerScore=winner==='tie'?0.5:winner===challenge.challenger?1:0;
+                const opponentScore=winner==='tie'?0.5:winner===challenge.opponent?1:0;
+                const challengerCalc=aiChallengeEloDelta(challengerElo,opponentElo,challengerScore,challenge,cp,op);
+                const opponentCalc=aiChallengeEloDelta(opponentElo,challengerElo,opponentScore,challenge,op,cp);
+                const eloAwarded={challenger:challengerCalc.delta,opponent:opponentCalc.delta};
+                const eloReason=`${challengerCalc.reason}`;
+                return {
+                    ...challenge,
+                    status:'completed',
+                    winner,
+                    completedAt:now,
+                    eloAwarded,
+                    eloReason
+                };
+            };
+
             const updateChallengeProgress=()=>{
                 const now=getTrustedTime();
                 setChallenges(prev=>prev.map(c=>{
                     if(c.status!=='active')return c;
-                    // Auto-expire challenges past their end date
-                    if(c.endDate&&Number(now)>Number(c.endDate)){
-                        return {...c,status:'expired',expiredAt:now};
-                    }
                     let updated={...c};
                     if(c.challenger===user)updated.challengerProgress=Math.max(0,stats.tasksCompleted-(c.challengerBaseline??0));
                     if(c.opponent===user)updated.opponentProgress=Math.max(0,stats.tasksCompleted-(c.opponentBaseline??stats.tasksCompleted));
+
+                    const outcome=resolveChallengeOutcome(updated,now);
+                    const finalChallenge=outcome||updated;
                     const other=c.challenger===user?c.opponent:c.challenger;
-                    if(FB.isReady())FB.writeInbox(other,'challenges',c.id,updated).catch(()=>{});
-                    writeSocial(other,d=>{if(!d.challenges)d.challenges=[];d.challenges=d.challenges.map(dc=>dc.id===c.id?updated:dc);return d;});
-                    if(now>c.endDate){
-                        const cp=updated.challengerProgress,op=updated.opponentProgress;
-                        const winner=cp>op?c.challenger:op>cp?c.opponent:'tie';
-                        if(winner===user){setXp(p=>p+500);setCoins(p=>p+250);logActivity('challenge_won',{opponent:other,xp:500,coins:250});}
-                        return{...updated,status:'completed',winner,completedAt:now};
-                    }
-                    const myProgress=c.challenger===user?updated.challengerProgress:updated.opponentProgress;
-                    const theirProgress=c.challenger===user?updated.opponentProgress:updated.challengerProgress;
-                    if(myProgress>=c.taskGoal||theirProgress>=c.taskGoal){
-                        const winner=myProgress>theirProgress?user:other;
-                        if(winner===user){setXp(p=>p+400);setCoins(p=>p+200);}
-                        return{...updated,status:'completed',winner,completedAt:now};
-                    }
-                    return updated;
+
+                    if(FB.isReady())FB.writeInbox(other,'challenges',c.id,finalChallenge).catch(()=>{});
+                    writeSocial(other,d=>{if(!d.challenges)d.challenges=[];d.challenges=d.challenges.map(dc=>dc.id===c.id?finalChallenge:dc);return d;});
+                    return finalChallenge;
                 }));
             };
 
@@ -1803,7 +2033,7 @@
                         if(profiles){
                             Object.values(profiles).forEach(p=>{
                                 if(!p.username)return;
-                                allUsers.push({username:p.username,totalXp:Math.max(0,p.totalXp||0),tier:Math.min(41,Math.max(0,p.tier||0)),level:1,tasksCompleted:Math.max(0,p.tasksCompleted||0),currentStreak:Math.max(0,p.streak||0),global:true});
+                                allUsers.push({username:p.username,totalXp:Math.max(0,p.totalXp||0),tier:Math.min(41,Math.max(0,p.tier||0)),elo:Math.max(0,p.elo||0),level:1,tasksCompleted:Math.max(0,p.tasksCompleted||0),currentStreak:Math.max(0,p.streak||0),global:true});
                                 seen.add(p.username.toLowerCase());
                             });
                         }
@@ -1819,11 +2049,11 @@
                             const data=JSON.parse(raw);
                             const username=key.replace('user-','').replace('-data','');
                             if(!username||seen.has(username.toLowerCase()))return;
-                            allUsers.push({username,totalXp:Math.max(0,data.totalXp||0),tier:Math.min(41,Math.max(0,data.tier||0)),level:Math.min(5,Math.max(1,data.lvl||1)),tasksCompleted:Math.max(0,data.stats?.tasksCompleted||0),currentStreak:Math.max(0,data.stats?.currentStreak||0)});
+                            allUsers.push({username,totalXp:Math.max(0,data.totalXp||0),tier:Math.min(41,Math.max(0,data.tier||0)),elo:Math.max(0,data.elo||0),level:Math.min(5,Math.max(1,data.lvl||1)),tasksCompleted:Math.max(0,data.stats?.tasksCompleted||0),currentStreak:Math.max(0,data.stats?.currentStreak||0)});
                         }catch(e){}
                     });
                 }catch(e){}
-                allUsers.sort((a,b)=>b.totalXp-a.totalXp);
+                allUsers.sort((a,b)=>(b.elo||0)-(a.elo||0)||(b.totalXp||0)-(a.totalXp||0));
                 setLeaderboard(allUsers.slice(0,20));
             };
             
@@ -1841,7 +2071,7 @@
                         updateChallengeProgress();
                         pollBattleInbox();
                     }
-                },showBattle?10000:30000); // Poll faster (10s) when Battle Arena is open
+                },showBattle?APP_CONFIG.battle.pollFastMs:APP_CONFIG.battle.pollIdleMs); // Poll faster when Battle Arena is open
                 return ()=>clearInterval(interval);
             },[user,showBattle]);
 
@@ -1863,7 +2093,31 @@
                     updateLeaderboard();
                 }
             },[showBattle]);
-            useEffect(()=>{if(user)saveData()},[tasks,xp,totalXp,coins,lvl,tier,season,charIdx,theme,stats,owned,achs,activeBoosters,currentTitle,currentBorder,currentEffect,specialChars,customThemes,activityLog,friends,friendRequests,challenges,tradeOffers,habits,goals,timeZone,tutorialCompleted,user]);
+            useEffect(()=>{if(user)saveData()},[tasks,xp,totalXp,coins,lvl,tier,season,charIdx,theme,stats,owned,achs,activeBoosters,currentTitle,currentBorder,currentEffect,specialChars,customThemes,activityLog,friends,friendRequests,challenges,elo,eloHistory,tradeOffers,habits,goals,timeZone,tutorialCompleted,user]);
+            useEffect(()=>{runBugChecks();},[user,musicMood,musicVolume,selectedTrackIndex,tasks.length,goals.length,habits.length,challenges.length,tradeOffers.length,friends.length,friendRequests.length]);
+            useEffect(()=>{
+                if(!user)return;
+                const pending=challenges.filter(c=>c.status==='completed'&&c.eloAwarded&&!eloHistory.includes(c.id));
+                if(pending.length===0)return;
+                let totalDelta=0;
+                pending.forEach(c=>{
+                    const myDelta=c.challenger===user?(c.eloAwarded?.challenger||0):(c.eloAwarded?.opponent||0);
+                    totalDelta+=myDelta;
+                    if(myDelta!==0){
+                        logActivity('challenge_elo',{challengeId:c.id,delta:myDelta,winner:c.winner,reason:c.eloReason||'AI challenge model'});
+                    }
+                    if(c.winner===user){
+                        setXp(p=>p+500);
+                        setCoins(p=>p+250);
+                    }
+                });
+                if(totalDelta!==0){
+                    setElo(prev=>Math.max(0,prev+totalDelta));
+                    alert(`🤖 AI ELO update: ${totalDelta>0?'+':''}${totalDelta} ELO from ${pending.length} resolved challenge(s).`);
+                }
+                setEloHistory(prev=>[...new Set([...prev,...pending.map(c=>c.id)])]);
+            },[challenges,user,eloHistory]);
+
             
             // Session timeout monitoring
             useEffect(()=>{
@@ -3182,10 +3436,10 @@
                         audioRef.current.src='';
                     }
                     setMusicPlaying(false);
+                    previousTrackIdRef.current=null;
                     return;
                 }
 
-                const selectedTrack=focusTracks[selectedTrackIndex]||focusTracks[0];
                 if(!selectedTrack)return;
 
                 if(!audioRef.current){
@@ -3194,10 +3448,17 @@
                 }
 
                 const audio=audioRef.current;
+                const trackChanged=previousTrackIdRef.current&&previousTrackIdRef.current!==selectedTrack.id;
                 if(audio.src!==selectedTrack.url){
                     audio.src=selectedTrack.url;
                 }
                 audio.volume=Math.max(0,Math.min(1,musicVolume/100));
+
+                if(trackChanged&&musicPlaying&&musicAutoplay){
+                    audio.currentTime=0;
+                    audio.play().catch(()=>{});
+                }
+                previousTrackIdRef.current=selectedTrack.id;
 
                 const handlePlay=()=>setMusicPlaying(true);
                 const handlePause=()=>setMusicPlaying(false);
@@ -3211,7 +3472,7 @@
                     audio.removeEventListener('pause',handlePause);
                     audio.removeEventListener('ended',handleEnd);
                 };
-            },[musicEnabled,selectedTrackIndex,musicVolume]);
+            },[musicEnabled,selectedTrack?.id,musicVolume,musicAutoplay,musicPlaying]);
 
             const toggleMusicPlayback=()=>{
                 if(!musicEnabled){
@@ -3474,11 +3735,12 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
             if(!user){
                 return (
                     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black text-white flex items-center justify-center p-4">
-                        <div className="max-w-md w-full">
+                        <div className={`max-w-md w-full ${securityMode==='lockdown'?'animate-glitch-wave':securityMode==='hardened'?'animate-edit-shake':''}`} key={authShakeKey}>
+                            {securityBanner&&<div className={`mb-3 text-xs rounded-xl border px-3 py-2 font-bold ${securityBanner.mode==='lockdown'?'bg-red-900/40 border-red-500 text-red-200':'bg-cyan-900/30 border-cyan-500 text-cyan-200'}`}>{securityBanner.message}</div>}
                             {authMode==='welcome'&&(
                                 <div className="text-center animate-fadeIn">
-                                    <div className="text-8xl mb-6 animate-float">🎮</div>
-                                    <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">P.I.V.T</h1>
+                                    <div className="text-8xl mb-6 animate-float animate-aurora-spin">🎮</div>
+                                    <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-text-sheen">P.I.V.T</h1>
                                     <p className="text-gray-400 mb-8">Productivity • Innovation • Victory • Transformation</p>
                                     <div className="space-y-4">
                                         <button onClick={()=>setAuthMode('login')} className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-cyan-500 to-blue-500 hover:opacity-90 transition-all transform hover:scale-105 shadow-lg">Login</button>
@@ -3507,13 +3769,14 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                     >
                                         🔍 Check for Lost Accounts
                                     </button>
-                                    <div className="mt-8 grid grid-cols-7 gap-2 opacity-50">
-                                        {tiers.map((t,i)=><div key={i} className="text-center"><div className="text-2xl mb-1">{t.icon}</div><div className="text-xs text-gray-500">{t.name}</div></div>)}
+                                    <div className="mt-8 grid grid-cols-4 gap-3 opacity-70">
+                                        {tiers.filter(t=>t.season===1).slice(0,4).map((t,i)=><div key={i} className="text-center animate-quantum"><div className="text-2xl mb-1">{t.icon}</div><div className="text-xs text-cyan-300">{t.name}</div></div>)}
                                     </div>
+                                    <p className="text-[11px] text-gray-500 mt-3">Season 1 preview only — other seasons unlock in-game.</p>
                                 </div>
                             )}
                             {authMode==='login'&&(
-                                <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 animate-slideUp animate-neon-pulse">
+                                <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 animate-slideUp animate-neon-pulse animate-card-pop">
                                     <h2 className="text-3xl font-bold mb-6 text-center">Welcome Back</h2>
                                     {authErr&&<div className="bg-red-500 bg-opacity-20 border border-red-500 rounded-lg p-3 mb-4 text-red-200 text-sm">{authErr}</div>}
                                     <div className="space-y-4">
@@ -3525,7 +3788,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                 </div>
                             )}
                             {authMode==='signup'&&(
-                                <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 animate-slideUp animate-neon-pulse">
+                                <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 animate-slideUp animate-neon-pulse animate-card-pop">
                                     <h2 className="text-3xl font-bold mb-6 text-center">Create Account</h2>
                                     {authErr&&<div className="bg-red-500 bg-opacity-20 border border-red-500 rounded-lg p-3 mb-4 text-red-200 text-sm">{authErr}</div>}
                                     <div className="space-y-4">
@@ -3539,12 +3802,12 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                 </div>
                             )}
                             {authMode==='forgot'&&(
-                                <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 animate-slideUp animate-neon-pulse">
+                                <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 animate-slideUp animate-neon-pulse animate-card-pop">
                                     <h2 className="text-3xl font-bold mb-2 text-center">Reset Password with OTP</h2>
                                     <p className="text-center text-gray-400 text-sm mb-6">Enter your username and email, click <strong>Send OTP to Email</strong>, check your inbox (and <strong>spam/junk folder</strong>!), then enter the 6-digit code below.</p>
                                     {authErr&&<div className="bg-red-500 bg-opacity-20 border border-red-500 rounded-lg p-3 mb-4 text-red-200 text-sm">{authErr}</div>}
                                     {resetMsg&&<div className="bg-green-500 bg-opacity-20 border border-green-500 rounded-lg p-3 mb-4 text-green-200 text-sm">{resetMsg}</div>}
-                                    {forgotOtpMeta&&<div className="bg-yellow-500 bg-opacity-10 border border-yellow-500 rounded-lg p-3 mb-4 text-yellow-200 text-xs">⏱️ OTP expires at {new Date(forgotOtpMeta.expires).toLocaleTimeString()} • {5-(forgotOtpMeta.attempts||0)} attempt(s) remaining</div>}
+                                    {forgotOtpMeta&&<div className="bg-yellow-500 bg-opacity-10 border border-yellow-500 rounded-lg p-3 mb-4 text-yellow-200 text-xs">⏱️ OTP expires at {new Date(forgotOtpMeta.expires).toLocaleTimeString()} • {APP_CONFIG.otp.maxAttempts-(forgotOtpMeta.attempts||0)} attempt(s) remaining</div>}
                                     {otpModal&&(
                                         <div className="mb-4 bg-gradient-to-br from-indigo-900 to-purple-900 border-2 border-cyan-400 rounded-2xl p-5 text-center animate-glow-ring">
                                             <p className="text-gray-300 text-xs mb-2 uppercase tracking-widest font-bold">Your One-Time Password</p>
@@ -4207,25 +4470,35 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                                 <div className="space-y-3">
                                                     <div className="bg-gray-800 p-3 rounded-lg">
                                                         <p className="text-xs text-gray-400">Now Selected</p>
-                                                        <p className="font-bold text-sm">{focusTracks[selectedTrackIndex]?.name||'Unknown Track'}</p>
-                                                        <p className="text-xs text-gray-400">{focusTracks[selectedTrackIndex]?.artist||''}</p>
+                                                        <p className="font-bold text-sm">{selectedTrack?.name||'Unknown Track'}</p>
+                                                        <p className="text-xs text-gray-400">{selectedTrack?.artist||''}</p>
                                                     </div>
                                                     <div className="flex gap-2 justify-center items-center">
-                                                        <button onClick={()=>setSelectedTrackIndex(prev=>(prev-1+focusTracks.length)%focusTracks.length)} className="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg transition-all">⏮</button>
+                                                        <button onClick={()=>shiftVisibleTrack(-1)} className="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg transition-all">⏮</button>
                                                         <button onClick={toggleMusicPlayback} className="p-3 bg-cyan-600 hover:bg-cyan-700 rounded-lg text-xl transition-all">{musicPlaying?'⏸':'▶️'}</button>
-                                                        <button onClick={()=>setSelectedTrackIndex(prev=>(prev+1)%focusTracks.length)} className="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg transition-all">⏭</button>
+                                                        <button onClick={()=>shiftVisibleTrack(1)} className="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg transition-all">⏭</button>
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-sm">🔊</span>
                                                         <input type="range" min="0" max="100" value={musicVolume} onChange={(e)=>setMusicVolume(parseInt(e.target.value,10)||0)} className="flex-1 accent-cyan-500"/>
                                                     </div>
-                                                    <select value={selectedTrackIndex} onChange={(e)=>setSelectedTrackIndex(parseInt(e.target.value,10)||0)} className="w-full bg-gray-800 p-2 rounded-lg text-sm">
-                                                        {focusTracks.map((track,idx)=><option key={track.name} value={idx}>{track.name} — {track.artist}</option>)}
-                                                    </select>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <select value={musicMood} onChange={(e)=>setMusicMood(e.target.value)} className="w-full bg-gray-800 p-2 rounded-lg text-sm">
+                                                            {availableMoods.map(mood=><option key={mood} value={mood}>{mood==='all'?'All moods':mood[0].toUpperCase()+mood.slice(1)}</option>)}
+                                                        </select>
+                                                        <select value={selectedTrack?.id||''} onChange={(e)=>setTrackById(e.target.value)} className="w-full bg-gray-800 p-2 rounded-lg text-sm">
+                                                            {visibleTracks.map(track=><option key={track.id} value={track.id}>{track.name} — {track.artist}</option>)}
+                                                        </select>
+                                                    </div>
                                                     <div className="grid grid-cols-2 gap-2">
                                                         <button onClick={playSelectedTrack} className="py-2 bg-cyan-700 hover:bg-cyan-600 rounded-lg text-xs transition-all">Restart Track</button>
-                                                        <button onClick={()=>{if(audioRef.current)audioRef.current.pause();setMusicEnabled(false);}} className="py-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-xs transition-all">Disable Player</button>
+                                                        <button onClick={pickRandomTrack} className="py-2 bg-purple-700 hover:bg-purple-600 rounded-lg text-xs transition-all">Random Track</button>
                                                     </div>
+                                                    <label className="flex items-center justify-between gap-2 text-xs text-gray-300 bg-gray-800 p-2 rounded-lg">
+                                                        <span>Auto-play when changing track</span>
+                                                        <input type="checkbox" checked={musicAutoplay} onChange={(e)=>setMusicAutoplay(e.target.checked)} className="accent-cyan-500"/>
+                                                    </label>
+                                                    <button onClick={()=>{if(audioRef.current)audioRef.current.pause();setMusicEnabled(false);}} className="w-full py-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-xs transition-all">Disable Player</button>
                                                 </div>
                                             )}
                                         </div>
@@ -4713,9 +4986,14 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                                             className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl font-black hover:opacity-90 transition-all">
                                                             🎯 Send Challenge!
                                                         </button>
-                                                        <p className="text-xs text-gray-500">Progress counts tasks completed AFTER the challenge starts. Winner: +500 XP & +250 Coins 🏆</p>
+                                                        <p className="text-xs text-gray-500">Progress counts tasks completed AFTER the challenge starts. AI calculates ELO gain/loss from goal, duration, and margin. Draw = 0 ELO.</p>
                                                     </div>
                                                 }
+                                            </div>
+                                            <div className="bg-cyan-900/20 border border-cyan-500/40 rounded-2xl p-4">
+                                                <p className="text-xs uppercase tracking-wider text-cyan-300 font-black">Challenge ELO</p>
+                                                <p className="text-3xl font-black text-white mt-1">{elo.toLocaleString()} <span className="text-cyan-300">ELO</span></p>
+                                                <p className="text-xs text-gray-400 mt-1">Starts at 0. AI adjusts gain/loss per challenge difficulty and result margin. Draws give 0 change. ELO never goes below 0.</p>
                                             </div>
                                             {/* Active Challenges */}
                                             {activeChallenges.length>0&&(
@@ -4774,7 +5052,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                             {/* Completed */}
                                             {completedChallenges.length>0&&(
                                                 <div className="bg-gray-800 rounded-2xl p-4 border border-gray-600">
-                                                    <h3 className="font-black mb-3 text-gray-400">✅ History</h3>
+                                                    <h3 className="font-black mb-3 text-gray-400">✅ History · Your ELO: <span className="text-cyan-300">{elo}</span></h3>
                                                     <div className="space-y-2">
                                                         {completedChallenges.slice(0,5).map(c=>{
                                                             const opponent=c.challenger===user?c.opponent:c.challenger;
@@ -4785,7 +5063,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                                             <div key={c.id} className={`bg-gray-900 rounded-xl p-3 flex items-center justify-between border-l-4 ${won?'border-green-500':tied?'border-yellow-500':'border-red-500'}`}>
                                                                 <div>
                                                                     <p className="font-bold text-sm text-white">vs {opponent}</p>
-                                                                    <p className="text-xs text-gray-400">{myScore} vs {theirScore} tasks · goal {c.taskGoal}</p>
+                                                                    <p className="text-xs text-gray-400">{myScore} vs {theirScore} tasks · goal {c.taskGoal} · ELO {c.challenger===user?((c.eloAwarded?.challenger||0)>=0?'+':'')+(c.eloAwarded?.challenger||0):((c.eloAwarded?.opponent||0)>=0?'+':'')+(c.eloAwarded?.opponent||0)}</p>
                                                                 </div>
                                                                 <span className={`text-sm font-black ${won?'text-green-400':tied?'text-yellow-400':'text-red-400'}`}>{won?'🏆 Won':tied?'⚖️ Tie':'💀 Lost'}</span>
                                                             </div>);
@@ -4884,7 +5162,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                                                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center font-bold">{player.username[0]?.toUpperCase()}</div>
                                                                 <div className="flex-1 min-w-0">
                                                                     <p className={`font-black truncate ${player.username===user?'text-purple-300':'text-white'}`}>{player.username}{player.username===user?' (You)':''}</p>
-                                                                    <p className="text-xs text-gray-400">{tiers[Math.min(41,player.tier||0)]?.name||'Novice'} · {(player.totalXp||0).toLocaleString()} XP · {player.tasksCompleted} tasks · {player.currentStreak}🔥</p>
+                                                                    <p className="text-xs text-gray-400">{tiers[Math.min(41,player.tier||0)]?.name||'Novice'} · {(player.totalXp||0).toLocaleString()} XP · {player.tasksCompleted} tasks · {player.currentStreak}🔥 · {(player.elo||0).toLocaleString()} ELO</p>
                                                                 </div>
                                                                 {idx<3&&<div className="text-2xl">{idx===0?'👑':idx===1?'🥈':'🥉'}</div>}
                                                             </div>
