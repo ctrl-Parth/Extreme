@@ -572,6 +572,11 @@
             ui:{
                 phoneMax:640,
                 tabletMax:1024
+            },
+            security:{
+                maxViolationScore:10,
+                autoLogoutScore:12,
+                devtoolsThresholdPx:160
             }
         };
 
@@ -612,7 +617,7 @@
             
             // DevTools Detection
             setInterval(()=>{
-                if(window.outerWidth-window.innerWidth>160||window.outerHeight-window.innerHeight>160){
+                if(window.outerWidth-window.innerWidth>APP_CONFIG.security.devtoolsThresholdPx||window.outerHeight-window.innerHeight>APP_CONFIG.security.devtoolsThresholdPx){
                     console.clear();
                 }
             },1000);
@@ -723,6 +728,8 @@
             const focusTimerRef=useRef(null);
             const audioRef=useRef(null);
             const previousTrackIdRef=useRef(null);
+            const violationScoreRef=useRef(0);
+            const saveSnapshotRef=useRef({coins:0,totalXp:0,tier:0,at:getTrustedTime()});
 
             const focusTracks=[
                 {id:'energy-1',name:'Morning Energy',artist:'SoundHelix',mood:'energy',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'},
@@ -1108,6 +1115,45 @@
                 {n:'Endgame',c:'from-purple-500 to-pink-500'}
             ];
 
+            const signDataPayload=(username,data)=>{
+                try{
+                    const clone={...data};
+                    delete clone.dataSignature;
+                    delete clone.signatureVersion;
+                    const canonical=JSON.stringify(clone);
+                    return hashPassword(`${username}::${canonical}`,'pivt-data-sign-v1');
+                }catch(e){
+                    return '';
+                }
+            };
+
+            const registerSecurityViolation=(reason,severity=1)=>{
+                const safeSeverity=Math.max(1,Math.min(6,severity));
+                violationScoreRef.current=Math.max(0,violationScoreRef.current+safeSeverity);
+                console.warn('ANTI-CHEAT:',reason,'score=',violationScoreRef.current);
+                if(violationScoreRef.current>=APP_CONFIG.security.maxViolationScore){
+                    setSecurityMode('lockdown');
+                    setSecurityBanner({message:`🚫 Anti-cheat warning: ${reason}`,mode:'lockdown',at:getTrustedTime()});
+                }
+                if(violationScoreRef.current>=APP_CONFIG.security.autoLogoutScore&&user){
+                    alert('🚫 Anti-cheat system triggered auto logout for suspicious behavior.');
+                    logout();
+                }
+            };
+
+            const auditProgressJump=()=>{
+                const now=getTrustedTime();
+                const prev=saveSnapshotRef.current||{coins:0,totalXp:0,tier:0,at:now};
+                const elapsed=Math.max(1,now-(prev.at||now));
+                const coinJump=Math.max(0,coins-(prev.coins||0));
+                const xpJump=Math.max(0,totalXp-(prev.totalXp||0));
+                const tierJump=Math.max(0,tier-(prev.tier||0));
+                if(elapsed<3000&&coinJump>500000)registerSecurityViolation('Unusual coin spike detected',3);
+                if(elapsed<3000&&xpJump>1000000)registerSecurityViolation('Unusual XP spike detected',3);
+                if(elapsed<5000&&tierJump>2)registerSecurityViolation('Unusual tier spike detected',4);
+                saveSnapshotRef.current={coins,totalXp,tier,at:now};
+            };
+
             const loadData=(u)=>{
                 const primary=S.get(`user-${u}-data`);
                 const backup=S.get(`user-${u}-data-backup`);
@@ -1117,6 +1163,10 @@
                 try{
                     const data=JSON.parse(rawData);
                     const trustedNow=getTrustedTime();
+                    const expectedSignature=signDataPayload(u,data);
+                    if(data.dataSignature&&expectedSignature&&data.dataSignature!==expectedSignature){
+                        registerSecurityViolation('Saved data signature mismatch',4);
+                    }
                     const sanitizedBoosters=(data.activeBoosters||[])
                         .filter(b=>b&&sanitizeBoosterExpiry(b.expires)>trustedNow)
                         .map(b=>({
@@ -1182,6 +1232,9 @@
                     .map(b=>({...b,expires:sanitizeBoosterExpiry(b.expires),type:normalizeBoosterType(b.type)}));
                 // Social data (friends, challenges, tradeOffers) stored separately in -social key
                 const data={tasks,xp,totalXp,coins,lvl,tier,season,charIdx,theme,stats,owned,achs,activeBoosters:sanitizedBoosters,currentTitle,currentBorder,currentEffect,specialChars,customThemes,activityLog,friends,friendRequests,challenges,elo,eloHistory,tradeOffers,habits,goals,tutorialCompleted,timeZone};
+                auditProgressJump();
+                data.signatureVersion=1;
+                data.dataSignature=signDataPayload(user,data);
                 const payload=JSON.stringify(data);
                 S.set(`user-${user}-data`,payload);
                 S.set(`user-${user}-data-backup`,payload);
@@ -2163,6 +2216,31 @@ Make sure the username is spelled correctly (it's case-insensitive). They must h
             },[challenges,user,eloHistory]);
 
             
+            useEffect(()=>{
+                if(!user)return;
+
+                const onContextMenu=(e)=>{e.preventDefault();registerSecurityViolation('Context menu blocked',1);};
+                const onKeyDown=(e)=>{
+                    const key=(e.key||'').toLowerCase();
+                    const block=(
+                        key==='f12'||
+                        (e.ctrlKey&&e.shiftKey&&['i','j','c'].includes(key))||
+                        (e.ctrlKey&&['u','s'].includes(key))
+                    );
+                    if(block){
+                        e.preventDefault();
+                        registerSecurityViolation('Developer shortcut blocked',2);
+                    }
+                };
+
+                window.addEventListener('contextmenu',onContextMenu);
+                window.addEventListener('keydown',onKeyDown,true);
+                return()=>{
+                    window.removeEventListener('contextmenu',onContextMenu);
+                    window.removeEventListener('keydown',onKeyDown,true);
+                };
+            },[user]);
+
             // Session timeout monitoring
             useEffect(()=>{
                 if(!user)return;
@@ -3816,7 +3894,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                     <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 opacity-70 adaptive-grid">
                                         {tiers.filter(t=>t.season===1).slice(0,4).map((t,i)=><div key={i} className="text-center animate-quantum"><div className="text-2xl mb-1">{t.icon}</div><div className="text-xs text-cyan-300">{t.name}</div></div>)}
                                     </div>
-                                    <p className="text-[11px] text-gray-500 mt-3">Season 1 preview only — other seasons unlock in-game.</p>
+                                    <p className="text-[11px] text-gray-500 mt-3">Season 1 preview only — other seasons unlock in-game.</p><p className="text-[10px] text-gray-600 mt-1">Security note: browser apps use client code; anti-cheat protections are active and monitored.</p>
                                 </div>
                             )}
                             {authMode==='login'&&(
