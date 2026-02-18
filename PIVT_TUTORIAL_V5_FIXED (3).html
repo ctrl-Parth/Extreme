@@ -133,6 +133,21 @@
         @media (min-width:1025px){
             .ui-shell .adaptive-modal{max-width:min(1200px,90vw)!important}
         }
+        @media (min-width:1600px){
+            .ui-shell .adaptive-modal{max-width:min(1400px,86vw)!important}
+        }
+        @media (max-width:420px){
+            .ui-shell .adaptive-title{font-size:clamp(1.25rem,8.5vw,1.8rem)!important}
+            .ui-shell .adaptive-stack{display:flex!important;flex-direction:column!important;gap:.5rem!important}
+        }
+        @media (pointer:coarse){
+            .ui-shell button,.ui-shell input,.ui-shell select,.ui-shell textarea{min-height:44px}
+        }
+        @media (prefers-reduced-motion:reduce){
+            .ui-shell *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+        }
+        .adaptive-vh{min-height:100dvh}
+        .safe-pad{padding-left:max(env(safe-area-inset-left),.75rem);padding-right:max(env(safe-area-inset-right),.75rem)}
 
     </style>
     </head>
@@ -571,7 +586,9 @@
             },
             ui:{
                 phoneMax:640,
-                tabletMax:1024
+                tabletMax:1024,
+                laptopMax:1440,
+                ultrawideMin:1600
             },
             security:{
                 maxViolationScore:10,
@@ -685,7 +702,7 @@
             const detectedTimeZone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
             const [countdownTick,setCountdownTick]=useState(0);
             const [timeZone,setTimeZone]=useState(detectedTimeZone);
-            const [uiWidth,setUiWidth]=useState(window.innerWidth||1280);
+            const [uiWidth,setUiWidth]=useState(typeof window!=='undefined'?(window.innerWidth||1280):1280);
             const [uiProfile,setUiProfile]=useState('desktop');
             const [editingTask,setEditingTask]=useState(null);
             const [showSeasonComplete,setShowSeasonComplete]=useState(null);
@@ -2172,7 +2189,8 @@ Make sure the username is spelled correctly (it's case-insensitive). They must h
                     setUiWidth(w);
                     if(w<=APP_CONFIG.ui.phoneMax)setUiProfile('phone');
                     else if(w<=APP_CONFIG.ui.tabletMax)setUiProfile('tablet');
-                    else if(w<=1440)setUiProfile('laptop');
+                    else if(w<=APP_CONFIG.ui.laptopMax)setUiProfile('laptop');
+                    else if(w>=APP_CONFIG.ui.ultrawideMin)setUiProfile('ultrawide');
                     else setUiProfile('desktop');
                 };
                 updateUiProfile();
@@ -3856,7 +3874,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
 
             if(!user){
                 return (
-                    <div className={`ui-shell ui-${uiProfile} min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black text-white flex items-center justify-center p-3 md:p-4`} data-ui={uiProfile}>
+                    <div className={`ui-shell ui-${uiProfile} adaptive-vh min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black text-white flex items-center justify-center p-3 md:p-4 safe-pad`} data-ui={uiProfile}>
                         <div className={`adaptive-card max-w-md w-full ${securityMode==='lockdown'?'animate-glitch-wave':securityMode==='hardened'?'animate-edit-shake':''}`} key={authShakeKey}>
                             {securityBanner&&<div className={`mb-3 text-xs rounded-xl border px-3 py-2 font-bold ${securityBanner.mode==='lockdown'?'bg-red-900/40 border-red-500 text-red-200':'bg-cyan-900/30 border-cyan-500 text-cyan-200'}`}>{securityBanner.message}</div>}
                             {authMode==='welcome'&&(
@@ -3864,7 +3882,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                     <div className="text-8xl mb-6 animate-float animate-aurora-spin">🎮</div>
                                     <h1 className="adaptive-title text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-text-sheen">P.I.V.T</h1>
                                     <p className="text-gray-400 mb-8">Productivity • Innovation • Victory • Transformation</p>
-                                    <div className="space-y-4">
+                                    <div className="space-y-4 adaptive-stack">
                                         <button onClick={()=>setAuthMode('login')} className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-cyan-500 to-blue-500 hover:opacity-90 transition-all transform hover:scale-105 shadow-lg">Login</button>
                                         <button onClick={()=>setAuthMode('signup')} className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 transition-all transform hover:scale-105 shadow-lg">Create Account</button>
                                     </div>
@@ -3961,7 +3979,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
             // MAIN GAME UI
             return(
                 <div className={appTheme==='dark'?'dark':''}>
-                <div className={`ui-shell ui-${uiProfile} min-h-screen ${appTheme==='dark'?'bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white':'bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 text-gray-900'} p-3 md:p-6 lg:p-8 transition-colors duration-300`} data-ui={uiProfile}>
+                <div className={`ui-shell ui-${uiProfile} adaptive-vh min-h-screen ${appTheme==='dark'?'bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white':'bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 text-gray-900'} p-3 md:p-6 lg:p-8 transition-colors duration-300 safe-pad`} data-ui={uiProfile}>
                     {coinAnim&&<div key={coinAnim.key} className="fixed top-20 right-4 z-50 animate-coinPop"><div className="bg-yellow-500 text-black px-4 py-2 rounded-full font-bold text-xl shadow-lg">+{coinAnim.amt} 💰</div></div>}
                     {xpAnim&&<div key={xpAnim.key} className="fixed top-32 right-4 z-50 animate-coinPop"><div className="bg-green-500 text-white px-4 py-2 rounded-full font-bold text-xl shadow-lg">+{xpAnim.amt} ⚡</div></div>}
                     {showTierUp&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-95 animate-fadeIn"><div className="text-center animate-reward-burst"><div className="text-9xl mb-4 animate-bounce animate-mega-flash">{ct.icon}</div><h1 className={`text-8xl font-black mb-3 bg-gradient-to-r ${ct.color} bg-clip-text text-transparent animate-pulse`}>MEGA TIER UP!</h1><p className="text-5xl font-bold mb-2 animate-neon-pulse">{ct.name}</p><p className="text-2xl text-yellow-300">+500 Coins! 💰</p><div className="flex justify-center gap-3 mt-5">{[...Array(8)].map((_,i)=><div key={i} className="w-10 h-10 text-yellow-300 animate-bounce" style={{animationDelay:`${i*0.08}s`}}><Star/></div>)}</div></div></div>}
@@ -4543,7 +4561,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                             </div>
                         </div>
 
-                        {showShop&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 p-4"><div className="bg-gray-800 rounded-2xl max-w-6xl w-full h-screen border border-gray-700 animate-scaleIn flex flex-col"><div className="sticky top-0 bg-gradient-to-b from-gray-800 via-gray-800 to-transparent pb-6 pt-8 px-8 z-50 backdrop-blur-sm shadow-2xl border-b-2 border-purple-500"><div className="flex items-center justify-between mb-4"><h2 className="text-4xl font-bold flex items-center gap-2"><Shop/><span>Shop</span></h2><button onClick={()=>setShowShop(false)} className="p-2 rounded-xl bg-gray-700 hover:bg-gray-600 transition-all"><X/></button></div><div className="flex gap-2 flex-wrap">{rarities.map((r,i)=><button key={i} onClick={()=>setShopFilter(i)} className={`px-4 py-2 rounded-lg font-bold transition-all ${shopFilter===i?`bg-gradient-to-r ${r.c}`:'bg-gray-700 hover:bg-gray-600'}`}>{r.n}</button>)}</div></div><div className="flex-1 overflow-y-auto px-8 pb-8 scrollbar-hide"><div className="grid md:grid-cols-3 gap-4 pt-4">{shopItems.filter(item=>item.rarity===shopFilter&&(!item.season||item.season<=season)).map(item=>{const r=rarities[item.rarity];const locked=tier<(item.minT||0)||lvl<(item.minL||1);const isOwned=owned.includes(item.id);const isBooster=item.type==='xp_boost'||item.type==='coin_boost'||item.type==='combo_boost';const shouldBlur=item.rarity>=5&&locked;return<div key={item.id} className={`bg-gray-700 rounded-xl p-4 border-3 transition-all ${item.rarity>=8?'animate-neon-pulse animate-mega-flash':''} ${shouldBlur?'blur-sm':''} ${locked?'opacity-50':''}`} style={{borderWidth:'3px',borderStyle:'solid',borderImage:`linear-gradient(to right, ${r.c.replace('from-','').replace('to-',',')}) 1`}}><div className={`w-full h-2 rounded-full bg-gradient-to-r ${r.c} mb-3`}></div><div className="flex items-center justify-between mb-3"><div className="flex items-center gap-3"><span className="text-4xl">{item.icon||item.char}</span><div><p className="font-bold">{shouldBlur?'???':item.n}</p>{!shouldBlur&&isBooster&&<><p className="text-[11px] text-cyan-300 mt-1">⏱ {getBoosterTimingText(item)}</p>{item.season&&<p className="text-[11px] text-purple-300">Season {item.season}+ booster</p>}</>}<p className={`text-xs bg-gradient-to-r ${r.c} bg-clip-text text-transparent font-bold`}>{r.n}</p></div></div><div className="text-right"><p className="text-2xl font-bold text-yellow-400">{shouldBlur?'???':item.price} 💰</p></div></div>{locked&&<p className="text-red-400 text-sm mb-2">🔒 {shouldBlur?'Locked - Reach Higher Tier to Reveal':`Requires ${tiers[item.minT||0].name}${item.minL>1?` Level ${item.minL}`:''}`}</p>}{isOwned&&!isBooster?<div className="bg-green-600 text-center py-2 rounded-lg font-bold">✓ Owned</div>:<button onClick={()=>buyItem(item)} disabled={locked} className={`w-full py-2 rounded-lg font-bold ${locked?'bg-gray-600 cursor-not-allowed':'bg-gradient-to-r from-yellow-500 to-orange-500 hover:opacity-90'}`}>{locked?'🔒 Locked':'Buy'}</button>}</div>})}{shopFilter===10&&<div className="bg-gray-700 rounded-xl p-4 border-3" style={{borderWidth:'3px',borderStyle:'solid',borderImage:'linear-gradient(to right, rgb(168, 85, 247), rgb(236, 72, 153)) 1'}}><div className="w-full h-2 rounded-full bg-gradient-to-r from-purple-400 to-purple-500 mb-3"></div><div className="flex items-center justify-between mb-3"><div className="flex items-center gap-3"><span className="text-4xl">🛡️</span><div><p className="font-bold">Streak Saver</p><p className="text-xs text-purple-400 font-bold">Special Item</p></div></div><p className="text-2xl font-bold text-yellow-400">1000 💰</p></div><p className="text-sm text-gray-400 mb-2">Save your streak! (1x per week)</p>{stats.streakSaverUsedThisWeek?<div className="bg-gray-600 text-center py-2 rounded-lg font-bold">Used This Week</div>:<button onClick={buyStreakSaver} className="w-full py-2 rounded-lg font-bold bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90">Buy & Use</button>}</div>}</div></div></div></div>}
+                        {showShop&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 p-2 md:p-4 adaptive-tight"><div className="adaptive-modal adaptive-card bg-gray-800 rounded-2xl max-w-6xl w-full h-[94dvh] border border-gray-700 animate-scaleIn flex flex-col"><div className="sticky top-0 bg-gradient-to-b from-gray-800 via-gray-800 to-transparent pb-4 pt-5 px-4 md:px-8 z-50 backdrop-blur-sm shadow-2xl border-b-2 border-purple-500"><div className="flex items-center justify-between mb-4"><h2 className="text-4xl font-bold flex items-center gap-2"><Shop/><span>Shop</span></h2><button onClick={()=>setShowShop(false)} className="p-2 rounded-xl bg-gray-700 hover:bg-gray-600 transition-all"><X/></button></div><div className="flex gap-2 flex-wrap">{rarities.map((r,i)=><button key={i} onClick={()=>setShopFilter(i)} className={`px-4 py-2 rounded-lg font-bold transition-all ${shopFilter===i?`bg-gradient-to-r ${r.c}`:'bg-gray-700 hover:bg-gray-600'}`}>{r.n}</button>)}</div></div><div className="flex-1 overflow-y-auto px-3 md:px-8 pb-4 md:pb-8 scrollbar-hide"><div className="grid md:grid-cols-3 gap-4 pt-4">{shopItems.filter(item=>item.rarity===shopFilter&&(!item.season||item.season<=season)).map(item=>{const r=rarities[item.rarity];const locked=tier<(item.minT||0)||lvl<(item.minL||1);const isOwned=owned.includes(item.id);const isBooster=item.type==='xp_boost'||item.type==='coin_boost'||item.type==='combo_boost';const shouldBlur=item.rarity>=5&&locked;return<div key={item.id} className={`bg-gray-700 rounded-xl p-4 border-3 transition-all ${item.rarity>=8?'animate-neon-pulse animate-mega-flash':''} ${shouldBlur?'blur-sm':''} ${locked?'opacity-50':''}`} style={{borderWidth:'3px',borderStyle:'solid',borderImage:`linear-gradient(to right, ${r.c.replace('from-','').replace('to-',',')}) 1`}}><div className={`w-full h-2 rounded-full bg-gradient-to-r ${r.c} mb-3`}></div><div className="flex items-center justify-between mb-3"><div className="flex items-center gap-3"><span className="text-4xl">{item.icon||item.char}</span><div><p className="font-bold">{shouldBlur?'???':item.n}</p>{!shouldBlur&&isBooster&&<><p className="text-[11px] text-cyan-300 mt-1">⏱ {getBoosterTimingText(item)}</p>{item.season&&<p className="text-[11px] text-purple-300">Season {item.season}+ booster</p>}</>}<p className={`text-xs bg-gradient-to-r ${r.c} bg-clip-text text-transparent font-bold`}>{r.n}</p></div></div><div className="text-right"><p className="text-2xl font-bold text-yellow-400">{shouldBlur?'???':item.price} 💰</p></div></div>{locked&&<p className="text-red-400 text-sm mb-2">🔒 {shouldBlur?'Locked - Reach Higher Tier to Reveal':`Requires ${tiers[item.minT||0].name}${item.minL>1?` Level ${item.minL}`:''}`}</p>}{isOwned&&!isBooster?<div className="bg-green-600 text-center py-2 rounded-lg font-bold">✓ Owned</div>:<button onClick={()=>buyItem(item)} disabled={locked} className={`w-full py-2 rounded-lg font-bold ${locked?'bg-gray-600 cursor-not-allowed':'bg-gradient-to-r from-yellow-500 to-orange-500 hover:opacity-90'}`}>{locked?'🔒 Locked':'Buy'}</button>}</div>})}{shopFilter===10&&<div className="bg-gray-700 rounded-xl p-4 border-3" style={{borderWidth:'3px',borderStyle:'solid',borderImage:'linear-gradient(to right, rgb(168, 85, 247), rgb(236, 72, 153)) 1'}}><div className="w-full h-2 rounded-full bg-gradient-to-r from-purple-400 to-purple-500 mb-3"></div><div className="flex items-center justify-between mb-3"><div className="flex items-center gap-3"><span className="text-4xl">🛡️</span><div><p className="font-bold">Streak Saver</p><p className="text-xs text-purple-400 font-bold">Special Item</p></div></div><p className="text-2xl font-bold text-yellow-400">1000 💰</p></div><p className="text-sm text-gray-400 mb-2">Save your streak! (1x per week)</p>{stats.streakSaverUsedThisWeek?<div className="bg-gray-600 text-center py-2 rounded-lg font-bold">Used This Week</div>:<button onClick={buyStreakSaver} className="w-full py-2 rounded-lg font-bold bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90">Buy & Use</button>}</div>}</div></div></div></div>}
 
                         {showFocus&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4">
                             <div className="adaptive-modal adaptive-card bg-gray-800 rounded-2xl p-8 max-w-3xl w-full border-2 border-purple-500 animate-scaleIn animate-card-pop max-h-screen overflow-y-auto scrollbar-hide">
