@@ -304,10 +304,14 @@
         const RANDOM_USERNAME_POOL_SIZE=usernameSeedAdjectives.length*usernameSeedNouns.length;
 
         const isInappropriateUsername=(username)=>{
-            const normalized=(username||'').toLowerCase().replace(/[^a-z0-9]/g,'');
-            if(!normalized)return false;
-            if(blockedUsernameFragmentsStrict.some(fragment=>normalized.includes(fragment)))return true;
             const lowered=(username||'').toLowerCase();
+            const deobfuscated=lowered
+                .replace(/[0]/g,'o').replace(/[1!|]/g,'i').replace(/[3]/g,'e').replace(/[4@]/g,'a')
+                .replace(/[5$]/g,'s').replace(/[7]/g,'t').replace(/[8]/g,'b')
+                .replace(/[^a-z0-9]/g,'')
+                .replace(/(.){2,}/g,'$1$1');
+            if(!deobfuscated)return false;
+            if(blockedUsernameFragmentsStrict.some(fragment=>deobfuscated.includes(fragment)))return true;
             return blockedUsernameFragmentsBoundary.some(fragment=>new RegExp(`(^|[_\d])${fragment}([_\d]|$)`).test(lowered));
         };
 
@@ -685,6 +689,7 @@
             
             const [user,setUser]=useState(null);
             const [appTheme,setAppTheme]=useState('dark');
+            const [appThemePref,setAppThemePref]=useState('dark');
             const [showSettings,setShowSettings]=useState(false);
             const [lastActivity,setLastActivity]=useState(Date.now());
             const [sessionTimeout,setSessionTimeout]=useState(null);
@@ -700,6 +705,7 @@
             const [securityMode,setSecurityMode]=useState('normal');
             const [securityBanner,setSecurityBanner]=useState(null);
             const [profilePic,setProfilePic]=useState('');
+            const [deleteRequestAt,setDeleteRequestAt]=useState(null);
             const auditRanRef=useRef(false);
             const [tasks,setTasks]=useState([]);
             const [xp,setXp]=useState(0);
@@ -911,6 +917,8 @@
                 add('UI cards include motion-safe transitions',document.querySelectorAll('.ui-card').length>=1);
                 add('Social persistence active',typeof readSocial==='function'&&typeof writeSocial==='function');
                 add('Avatar renderer active',typeof renderAvatar==='function');
+                add('Deletion lock system active',typeof deleteAcc==='function');
+                add('Theme preference system active',typeof applyThemePreference==='function');
                 const passCount=checks.filter(c=>c.pass).length;
                 console.info(`✅ Full Feature Audit: ${passCount}/${checks.length} checks passed`,checks);
                 return {passCount,total:checks.length,checks};
@@ -960,6 +968,8 @@
                 addCheck('Selected track index valid',selectedTrackIndex>=0&&selectedTrackIndex<focusTracks.length);
                 addCheck('Auth form has OTP field',Object.prototype.hasOwnProperty.call(authForm,'otp'));
                 addCheck('Username validator exists',typeof validateUsername==='function');
+                addCheck('Username deobfuscation active',String(isInappropriateUsername).includes('deobfuscated'));
+                addCheck('Account deletion lock key wired',typeof deleteRequestAt==='number'||deleteRequestAt===null);
                 addCheck('Password hash exists',typeof hashPassword==='function');
                 addCheck('Sanitizer exists',typeof sanitizeInput==='function');
                 addCheck('Trusted time function exists',typeof getTrustedTime==='function');
@@ -1862,21 +1872,66 @@
                 setAuthMode('welcome');
             };
 
-            const toggleTheme=()=>{
-                const newTheme=appTheme==='dark'?'light':'dark';
-                setAppTheme(newTheme);
-                localStorage.setItem('app-theme',newTheme);
+            const applyThemePreference=(pref)=>{
+                const resolved=pref==='auto'?(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):pref;
+                setAppThemePref(pref);
+                setAppTheme(resolved);
+                localStorage.setItem('app-theme-pref',pref);
+                localStorage.setItem('app-theme',resolved);
             };
+            const toggleTheme=()=>applyThemePreference(appThemePref==='dark'?'light':appThemePref==='light'?'auto':'dark');
 
-            const deleteAcc=()=>{
-                if(!confirm('Delete account? Cannot undo!'))return;
-                S.delete(`user-${user}-account`);
-                S.delete(`user-${user}-data`);
-                S.delete(`user-${user}-data-backup`);
-                S.delete(`user-${user}-social`);
+            const deleteAcc=async()=>{
+                const now=getTrustedTime();
+                const key='pending-delete-at';
+                const requestedAt=deleteRequestAt||Number(localStorage.getItem(key)||0)||0;
+                const waitMs=24*60*60*1000;
+                if(!requestedAt){
+                    if(!confirm('Request full account deletion? You will be able to permanently delete after 24 hours.'))return;
+                    localStorage.setItem(key,String(now));
+                    setDeleteRequestAt(now);
+                    setSecurityBanner({message:'⚠️ Deletion requested. Return after 24h to permanently delete.',mode:'hardened',at:now});
+                    return;
+                }
+                const readyAt=requestedAt+waitMs;
+                if(now<readyAt){
+                    const hours=Math.ceil((readyAt-now)/3600000);
+                    return alert(`Deletion lock active. Try again in ~${hours} hour(s).`);
+                }
+                if(!confirm('Final confirmation: permanently delete this account and all progress? This cannot be undone.'))return;
+                const username=user;
+                const removeFromSocial=(obj)=>{
+                    if(!obj)return obj;
+                    const clean={...obj};
+                    clean.friends=(clean.friends||[]).filter(f=>f!==username);
+                    clean.friendRequests=(clean.friendRequests||[]).filter(r=>r.from!==username&&r.to!==username);
+                    clean.challenges=(clean.challenges||[]).filter(c=>c.from!==username&&c.to!==username&&c.opponent!==username);
+                    clean.tradeOffers=(clean.tradeOffers||[]).filter(t=>t.from!==username&&t.to!==username);
+                    return clean;
+                };
+                try{
+                    for(let i=0;i<localStorage.length;i++){
+                        const k=localStorage.key(i);
+                        if(k&&k.endsWith('-social')){
+                            const raw=localStorage.getItem(k);
+                            if(raw)localStorage.setItem(k,JSON.stringify(removeFromSocial(JSON.parse(raw))));
+                        }
+                    }
+                }catch(e){}
+                if(FB.isReady()){
+                    try{await FB.setProfile(username,null);}catch(e){}
+                    try{await FB.setFriends(username,[]);}catch(e){}
+                    try{await FB.del(`inbox/${username}`);}catch(e){}
+                }
+                S.delete(`user-${username}-account`);
+                S.delete(`user-${username}-data`);
+                S.delete(`user-${username}-data-backup`);
+                S.delete(`user-${username}-social`);
+                localStorage.removeItem(key);
+                setDeleteRequestAt(null);
                 try{
                     const attempts=JSON.parse(localStorage.getItem('login_attempts')||'{}');
-                    delete attempts[user.toLowerCase()];
+                    delete attempts[username.toLowerCase()];
                     localStorage.setItem('login_attempts',JSON.stringify(attempts));
                 }catch(e){}
                 logout();
@@ -2346,10 +2401,23 @@ Make sure the username is spelled correctly (it's case-insensitive). They must h
                     loadData(u.value);
                     setTimeout(()=>checkStreaks(),300);
                 }
-                // Load saved theme
-                const savedTheme=localStorage.getItem('app-theme')||'dark';
-                setAppTheme(savedTheme);
+                // Load saved theme preference + resolved mode
+                const savedThemePref=localStorage.getItem('app-theme-pref')||localStorage.getItem('app-theme')||'dark';
+                const resolvedTheme=savedThemePref==='auto'?(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):savedThemePref;
+                setAppThemePref(savedThemePref);
+                setAppTheme(resolvedTheme);
+                const pendingDelete=localStorage.getItem('pending-delete-at');
+                if(pendingDelete)setDeleteRequestAt(Number(pendingDelete)||null);
             },[]);
+
+            useEffect(()=>{
+                if(appThemePref!=='auto'||!window.matchMedia)return;
+                const mq=window.matchMedia('(prefers-color-scheme: dark)');
+                const syncTheme=()=>setAppTheme(mq.matches?'dark':'light');
+                syncTheme();
+                mq.addEventListener&&mq.addEventListener('change',syncTheme);
+                return ()=>{mq.removeEventListener&&mq.removeEventListener('change',syncTheme);};
+            },[appThemePref]);
 
             useEffect(()=>{
                 const updateUiProfile=()=>{
@@ -5517,12 +5585,9 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                                         {appTheme==='dark'?'Dark Mode':'Light Mode'}
                                                     </p>
                                                 </div>
-                                                <button 
-                                                    onClick={toggleTheme} 
-                                                    className={`w-16 h-8 rounded-full transition-all relative ${appTheme==='dark'?'bg-blue-600':'bg-gray-300'}`}
-                                                >
-                                                    <div className={`absolute top-1 ${appTheme==='dark'?'right-1':'left-1'} w-6 h-6 bg-white rounded-full transition-all shadow-lg`}></div>
-                                                </button>
+                                                <div className={`inline-flex rounded-xl p-1 ${appTheme==='dark'?'bg-gray-800':'bg-white border border-gray-300'}`}>
+                                                    {['dark','light','auto'].map(mode=><button key={mode} onClick={()=>applyThemePreference(mode)} className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${appThemePref===mode?(appTheme==='dark'?'bg-cyan-600 text-white':'bg-blue-600 text-white'):(appTheme==='dark'?'text-gray-300 hover:bg-gray-700':'text-gray-700 hover:bg-gray-100')}`}>{mode==='auto'?'Auto':mode==='dark'?'Dark':'Light'}</button>)}
+                                                </div>
                                             </div>
                                         </div>
 
@@ -5596,6 +5661,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                             >
                                                 <LogOut/> Logout
                                             </button>
+                                            <button onClick={deleteAcc} className="w-full p-3 rounded-xl font-bold bg-gradient-to-r from-red-700 to-red-900 hover:opacity-90 text-white transition-all">{deleteRequestAt?`Complete Account Delete (${Math.max(0,Math.ceil(((deleteRequestAt+86400000)-getTrustedTime())/3600000))}h)`:'Request Account Deletion (24h lock)'}</button>
                                         </div>
                                     </div>
                                 </div>
