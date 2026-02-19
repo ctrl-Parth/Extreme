@@ -800,6 +800,7 @@
             const previousTrackIdRef=useRef(null);
             const violationScoreRef=useRef(0);
             const saveSnapshotRef=useRef({coins:0,totalXp:0,tier:0,at:getTrustedTime()});
+            const autoTourShownForUserRef=useRef('');
 
             const focusTracks=[
                 {id:'energy-1',name:'Morning Energy',artist:'SoundHelix',mood:'energy',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'},
@@ -2111,40 +2112,6 @@ const runBugChecks=()=>{
             };
 
 
-            const launchDemoExperience=(openTour=false)=>{
-                stopFocusTimer();
-                if(audioRef.current){
-                    audioRef.current.pause();
-                    audioRef.current.currentTime=0;
-                }
-
-                setAuthErr('');
-                setResetMsg('');
-                setForgotOtpMeta(null);
-                setOtpModal(null);
-
-                let guideBanner='🧭 Guided demo ready';
-                try{
-                    const report=runPrePublishFinalCheck();
-                    const bugChecks=Array.isArray(report?.bugReport)?report.bugReport:[];
-                    const passed=bugChecks.filter(c=>c.pass).length;
-                    const total=bugChecks.length||1;
-                    const passRate=Math.round((passed/total)*100);
-                    guideBanner=`🧭 Guided demo ready • Bug checks ${passed}/${total} (${passRate}%)`;
-                }catch(e){
-                    console.warn('Guide launch bug-check failed',e);
-                    guideBanner='🧭 Guided demo ready • Bug check fallback mode';
-                }
-
-                setSecurityMode('normal');
-                setSecurityBanner({message:guideBanner,mode:'normal',at:getTrustedTime()});
-                setTimeout(()=>setSecurityBanner(null),3200);
-
-                setTutorialCompleted(false);
-                setTutorialStep(openTour?0:5);
-                setShowTutorial(true);
-            };
-
             const logout=()=>{
                 S.delete('current-user');
                 setUser(null);
@@ -2183,6 +2150,7 @@ const runBugChecks=()=>{
                 setSecurityMode('normal');
                 setSecurityBanner(null);
                 setAuthMode('welcome');
+                autoTourShownForUserRef.current='';
             };
 
             const applyThemePreference=(pref)=>{
@@ -2752,6 +2720,18 @@ Make sure the username is spelled correctly (it's case-insensitive). They must h
                 // one-time publish sanity check on first boot cycle
                 setTimeout(()=>{try{runPrePublishFinalCheck();}catch(e){console.warn('Pre-publish check failed to run',e);}},400);
             },[]);
+
+            useEffect(()=>{
+                if(!user)return;
+                if(autoTourShownForUserRef.current===user)return;
+                autoTourShownForUserRef.current=user;
+                setTimeout(()=>{
+                    setTutorialStep(5);
+                    setShowTutorial(true);
+                    setSecurityBanner({message:'🧭 Quick tour started automatically after login.',mode:'normal',at:getTrustedTime()});
+                    setTimeout(()=>setSecurityBanner(null),2600);
+                },700);
+            },[user]);
 
             useEffect(()=>{
                 const resetMarker='pivt-fresh-start-v1';
@@ -4518,8 +4498,8 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                     <div className="space-y-4 adaptive-stack">
                                         <button onClick={()=>setAuthMode('login')} className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-cyan-500 to-blue-500 hover:opacity-90 transition-all transform hover:scale-105 shadow-lg">Login</button>
                                         <button onClick={()=>setAuthMode('signup')} className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 transition-all transform hover:scale-105 shadow-lg">Create Account</button>
-                                        <button onClick={()=>launchDemoExperience(false)} className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-90 transition-all">Open Game Flow Guide</button>
-                                        <button onClick={()=>launchDemoExperience(true)} className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-indigo-500 to-violet-600 hover:opacity-90 transition-all">Start Interactive Tour</button>
+                                        
+                                        
                                     </div>
                                     <button 
                                         onClick={()=>{
@@ -4558,10 +4538,6 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                         <div><label className="block text-sm text-gray-400 mb-2">Username</label><div className="relative"><div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"><User/></div><input type="text" value={authForm.username} onChange={(e)=>setAuthForm({...authForm,username:e.target.value})} onKeyPress={(e)=>e.key==='Enter'&&login()} className="w-full bg-gray-700 text-white pl-12 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500" placeholder="Enter username"/></div></div>
                                         <div><label className="block text-sm text-gray-400 mb-2">Password</label><div className="relative"><div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"><Lock/></div><input type={showPass?'text':'password'} value={authForm.password} onChange={(e)=>setAuthForm({...authForm,password:e.target.value})} onKeyPress={(e)=>e.key==='Enter'&&login()} className="w-full bg-gray-700 text-white pl-12 pr-12 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500" placeholder="Enter password"/><button onClick={()=>setShowPass(!showPass)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300">{showPass?<EyeOff/>:<Eye/>}</button></div></div>
                                         <button onClick={login} className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-cyan-500 to-blue-500 hover:opacity-90 transition-all transform hover:scale-105 shadow-lg">Login</button>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            <button onClick={()=>launchDemoExperience(false)} className="w-full py-2.5 rounded-xl font-bold bg-emerald-700 hover:bg-emerald-600 transition-all text-sm">Open Game Flow Guide</button>
-                                            <button onClick={()=>launchDemoExperience(true)} className="w-full py-2.5 rounded-xl font-bold bg-indigo-700 hover:bg-indigo-600 transition-all text-sm">Start Interactive Tour</button>
-                                        </div>
                                         <div className="text-center space-y-2"><button onClick={()=>{setAuthMode('forgot');setAuthErr('');setAuthForm({username:'',email:'',password:'',confirmPassword:'',otp:''})}} className="text-cyan-400 hover:text-cyan-300 text-sm">Forgot Password?</button><div className="text-gray-500 text-sm">Don't have an account? <button onClick={()=>{setAuthMode('signup');setAuthErr('');setAuthForm({username:'',email:'',password:'',confirmPassword:'',otp:''})}} className="text-purple-400 hover:text-purple-300">Sign Up</button></div></div>
                                     </div>
                                 </div>
@@ -4575,10 +4551,6 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                         <div><label className="block text-sm text-gray-400 mb-2">Email</label><div className="relative"><div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"><Mail/></div><input type="email" value={authForm.email} onChange={(e)=>setAuthForm({...authForm,email:e.target.value})} className="w-full bg-gray-700 text-white pl-12 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Your email"/></div></div>
                                         <div><label className="block text-sm text-gray-400 mb-2">Password</label><div className="relative"><div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"><Lock/></div><input type={showPass?'text':'password'} value={authForm.password} onChange={(e)=>setAuthForm({...authForm,password:e.target.value})} className="w-full bg-gray-700 text-white pl-12 pr-12 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Min 6 characters"/><button onClick={()=>setShowPass(!showPass)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300">{showPass?<EyeOff/>:<Eye/>}</button></div></div>
                                         <div><label className="block text-sm text-gray-400 mb-2">Confirm Password</label><div className="relative"><div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"><Lock/></div><input type={showPass?'text':'password'} value={authForm.confirmPassword} onChange={(e)=>setAuthForm({...authForm,confirmPassword:e.target.value})} onKeyPress={(e)=>e.key==='Enter'&&signup()} className="w-full bg-gray-700 text-white pl-12 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Confirm password"/></div></div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            <button onClick={()=>launchDemoExperience(false)} className="w-full py-2.5 rounded-xl font-bold bg-emerald-700 hover:bg-emerald-600 transition-all text-sm">Open Game Flow Guide</button>
-                                            <button onClick={()=>launchDemoExperience(true)} className="w-full py-2.5 rounded-xl font-bold bg-indigo-700 hover:bg-indigo-600 transition-all text-sm">Start Interactive Tour</button>
-                                        </div>
                                         <button onClick={signup} className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 transition-all transform hover:scale-105 shadow-lg">Create Account</button>
                                         <div className="text-center text-gray-500 text-sm">Already have account? <button onClick={()=>{setAuthMode('login');setAuthErr('');setAuthForm({username:'',email:'',password:'',confirmPassword:'',otp:''})}} className="text-cyan-400 hover:text-cyan-300">Login</button></div>
                                     </div>
@@ -5004,11 +4976,6 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                         <p className="text-xs text-gray-300"><span className="text-cyan-300 font-bold">{getTimezoneClock().pretty}</span> <span className="text-gray-400">({getTimezoneClock().shortZone})</span></p>
                                     </div>
                                 </div>
-                                <div className="flex flex-wrap gap-2">
-                                    <button onClick={()=>launchDemoExperience(false)} className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold transition-all">Open Game Flow Guide</button>
-                                    <button onClick={()=>launchDemoExperience(true)} className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold transition-all">Start Interactive Tour</button>
-                                </div>
-
                             </div>
                             <div className="relative z-10 mt-4 grid md:grid-cols-7 gap-2">{Array.from({length:7}).map((_,idx)=>{
                                 const base=new Date();
