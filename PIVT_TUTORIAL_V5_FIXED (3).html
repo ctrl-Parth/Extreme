@@ -1065,6 +1065,7 @@
                 add('Ranked board generated',Array.isArray(rankedBoard));
                 add('OTP sender configured',typeof sendForgotOtp==='function');
                 add('Deletion lock wired',typeof deleteAcc==='function');
+                add('Strict username uniqueness active',typeof isUsernameTakenStrict==='function');
                 add('Time system available',typeof getTrustedTime==='function'&&typeof getTrustedHour==='function');
                 add('Timezone choices available',Array.isArray(timeZoneChoices)&&timeZoneChoices.length>10);
                 add('Progress bar inputs sane',Number(xp)>=0&&Number(totalXp)>=0&&Number(getLvlXp())>0);
@@ -1117,6 +1118,8 @@ const runBugChecks=()=>{
                 addCheck('Selected track index valid',selectedTrackIndex>=0&&selectedTrackIndex<focusTracks.length);
                 addCheck('Auth form has OTP field',Object.prototype.hasOwnProperty.call(authForm,'otp'));
                 addCheck('Username validator exists',typeof validateUsername==='function');
+                addCheck('Strict username uniqueness check active',typeof isUsernameTakenStrict==='function');
+                addCheck('Fresh start cleanup function active',typeof wipeAllAccountsForFreshStart==='function');
                 addCheck('Username deobfuscation active',String(isInappropriateUsername).includes('deobfuscated'));
                 addCheck('Account deletion lock key wired',typeof deleteRequestAt==='number'||deleteRequestAt===null);
                 addCheck('Special events state ready',typeof specialEvent==='object'&&Object.prototype.hasOwnProperty.call(specialEvent,'doubleXpWeekend'));
@@ -1667,14 +1670,53 @@ const runBugChecks=()=>{
                 }
             };
 
+            const normalizeUsernameKey=(username)=>sanitizeInput(username||'',20).toLowerCase();
+
+            const isUsernameTakenStrict=(username)=>{
+                const normalized=normalizeUsernameKey(username);
+                if(!normalized)return false;
+                try{
+                    for(let i=0;i<localStorage.length;i++){
+                        const key=localStorage.key(i);
+                        if(!key||!key.endsWith('-account'))continue;
+                        const raw=localStorage.getItem(key);
+                        let storedName='';
+                        try{storedName=JSON.parse(raw||'{}').username||'';}catch(e){}
+                        const keyName=key.startsWith('user-')?key.slice(5).replace(/-account$/,''):key.replace(/-account$/,'');
+                        if(normalizeUsernameKey(storedName)===normalized||normalizeUsernameKey(keyName)===normalized)return true;
+                    }
+                }catch(e){}
+                return false;
+            };
+
+            const wipeAllAccountsForFreshStart=()=>{
+                const keys=[];
+                try{
+                    for(let i=0;i<localStorage.length;i++){
+                        const k=localStorage.key(i);
+                        if(!k)continue;
+                        if(k.endsWith('-account')||k.endsWith('-data')||k.endsWith('-data-backup')||k.endsWith('-social'))keys.push(k);
+                    }
+                    ['current-user','login_attempts','pending-delete-at'].forEach(k=>keys.push(k));
+                    const unique=[...new Set(keys)];
+                    unique.forEach(k=>localStorage.removeItem(k));
+                    return unique.length;
+                }catch(e){return 0;}
+            };
+
             const getAccountKeyByUsername=(username)=>{
-                const normalized=(username||'').toLowerCase();
+                const normalized=normalizeUsernameKey(username);
                 if(!normalized)return null;
                 for(let i=0;i<localStorage.length;i++){
                     const key=localStorage.key(i);
                     if(key&&key.endsWith('-account')){
                         const uname=key.startsWith('user-')?key.slice(5).replace(/-account$/,''):key.replace(/-account$/,'');
-                        if((uname||'').toLowerCase()===normalized)return key;
+                        if(normalizeUsernameKey(uname)===normalized)return key;
+                        try{
+                            const raw=localStorage.getItem(key);
+                            const acc=raw?JSON.parse(raw):null;
+                            if(acc&&normalizeUsernameKey(acc.username)===normalized)return key;
+                        }catch(e){}
                     }
                 }
                 return null;
@@ -1809,7 +1851,7 @@ const runBugChecks=()=>{
                 if(authForm.password!==authForm.confirmPassword)return setAuthErr('Passwords do not match');
                 
                 // Check if username exists
-                if(getAccountKeyByUsername(username))return setAuthErr('Username already taken (case-insensitive)');
+                if(isUsernameTakenStrict(username)||getAccountKeyByUsername(username))return setAuthErr('Username already taken (case-insensitive)');
                 
                 // Check if email exists
                 try{
@@ -2548,6 +2590,12 @@ Make sure the username is spelled correctly (it's case-insensitive). They must h
             },[user,showBattle]);
 
             useEffect(()=>{
+                const resetMarker='pivt-fresh-start-v1';
+                if(!localStorage.getItem(resetMarker)){
+                    const removed=wipeAllAccountsForFreshStart();
+                    localStorage.setItem(resetMarker,String(getTrustedTime()));
+                    if(removed>0)console.warn(`🧹 Fresh start cleanup removed ${removed} local account records.`);
+                }
                 const u=S.get('current-user');
                 if(u?.value){
                     setUser(u.value);
