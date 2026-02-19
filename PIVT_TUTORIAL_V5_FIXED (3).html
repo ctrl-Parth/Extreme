@@ -749,7 +749,6 @@
             const [battleTab,setBattleTab]=useState('friends');
             const [rankedBoard,setRankedBoard]=useState([]);
             const [specialEvent,setSpecialEvent]=useState({doubleXpWeekend:false,goldenHour:false,megaWheel:false,label:''});
-            const [showPostLoginAuditPrompt,setShowPostLoginAuditPrompt]=useState(false);
             const [leaderboard,setLeaderboard]=useState([]);
             const detectedTimeZone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
             const [countdownTick,setCountdownTick]=useState(0);
@@ -2690,41 +2689,7 @@ Make sure the username is spelled correctly (it's case-insensitive). They must h
                 setLeaderboard(allUsers.slice(0,20));
             };
 
-            const runBattleWheelConnectivityCheck=()=>{
-                const checks=[];
-                const add=(name,ok,details='')=>checks.push({name,ok:Boolean(ok),details});
-                add('Wheel tiers configured',Array.isArray(wheelTiers)&&wheelTiers.length>=1,`tiers:${wheelTiers.length}`);
-                add('Wheel prizes configured',Array.isArray(wheelPrizes)&&wheelPrizes.length>=8,`prizes:${wheelPrizes.length}`);
-                add('Spin handler connected',typeof spinWheel==='function');
-                add('Wheel state is sane',typeof wheelSpinning==='boolean'&&typeof wheelTier==='number');
-                add('Battle arrays connected',Array.isArray(friends)&&Array.isArray(challenges)&&Array.isArray(friendRequests));
-                add('Leaderboard arrays connected',Array.isArray(leaderboard)&&Array.isArray(rankedBoard));
-                add('Battle polling function connected',typeof pollBattleInbox==='function');
-                add('Trading tier window guard connected',typeof isItemWithinTradeTierWindow==='function');
-                add('Challenge updater connected',typeof updateChallengeProgress==='function');
-                add('Ranked updater connected',typeof updateRankedLeaderboard==='function');
-                add('Leaderboard updater connected',typeof updateLeaderboard==='function');
-                const pass=checks.filter(c=>c.ok).length;
-                const total=checks.length;
-                console.table(checks.map(c=>({check:c.name,status:c.ok?'PASS':'FAIL',details:c.details||''})));
-                return {pass,total,checks};
-            };
 
-            const clearBattleAndLeaderboardAccounts=()=>{
-                const ok=confirm('Clear all local accounts, battle history, and local leaderboard data for a fresh start? This removes every local profile on this device.');
-                if(!ok)return;
-                const removed=wipeAllAccountsForFreshStart();
-                setLeaderboard([]);
-                setRankedBoard([]);
-                setFriends([]);
-                setFriendRequests([]);
-                setChallenges([]);
-                setTradeOffers([]);
-                setSecurityBanner({message:`🧹 Cleared ${removed} local account records. Fresh battle/leaderboard ready.`,mode:'hardened',at:getTrustedTime()});
-                setTimeout(()=>setSecurityBanner(null),3200);
-                logout();
-            };
-            
             useEffect(()=>{
                 if(user){
                     updateChallengeProgress();
@@ -2744,11 +2709,6 @@ Make sure the username is spelled correctly (it's case-insensitive). They must h
                 },showBattle?APP_CONFIG.battle.pollFastMs:APP_CONFIG.battle.pollIdleMs); // Poll faster when Battle Arena is open
                 return ()=>clearInterval(interval);
             },[user,showBattle]);
-
-            useEffect(()=>{
-                // one-time publish sanity check on first boot cycle
-                setTimeout(()=>{try{runPrePublishFinalCheck();}catch(e){console.warn('Pre-publish check failed to run',e);}},400);
-            },[]);
 
             useEffect(()=>{
                 if(!user)return;
@@ -2827,24 +2787,6 @@ Make sure the username is spelled correctly (it's case-insensitive). They must h
                 }
             },[showBattle]);
             useEffect(()=>{if(user)saveData()},[tasks,deletedTasks,graveyardResurrections,xp,totalXp,coins,lvl,tier,season,charIdx,theme,stats,owned,achs,activeBoosters,currentTitle,currentBorder,currentEffect,specialChars,customThemes,activityLog,friends,friendRequests,challenges,elo,eloHistory,profilePic,tradeOffers,habits,goals,timeZone,tutorialCompleted,user]);
-            useEffect(()=>{
-                if(!user)return;
-                const key='last-login-audit-prompt';
-                const todayKey=new Date(getTrustedTime()).toDateString();
-                const last=localStorage.getItem(key)||'';
-                if(last!==`${user}::${todayKey}`){
-                    setShowPostLoginAuditPrompt(true);
-                    localStorage.setItem(key,`${user}::${todayKey}`);
-                }
-            },[user]);
-
-            useEffect(()=>{runBugChecks();},[user,musicMood,musicVolume,selectedTrackIndex,tasks.length,goals.length,habits.length,challenges.length,tradeOffers.length,friends.length,friendRequests.length]);
-            useEffect(()=>{
-                if(!user||auditRanRef.current)return;
-                const report=runFullFeatureAudit();
-                auditRanRef.current=true;
-                if(report.passCount<report.total)console.warn('Some feature checks failed',report);
-            },[user]);
             useEffect(()=>{
                 if(!user)return;
                 const pending=challenges.filter(c=>c.status==='completed'&&c.eloAwarded&&!eloHistory.includes(c.id));
@@ -6091,12 +6033,6 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                         
                                         {/* Actions */}
                                         <div className="space-y-2 pt-2">
-                                            <button onClick={()=>{const report=runFullFeatureAudit();alert(`🧪 Full Feature Audit: ${report.passCount}/${report.total} checks passed`);}} className="w-full p-3 rounded-xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-90 text-white transition-all">Run Full Feature Audit</button>
-                                            <button onClick={()=>{const r=runBattleWheelConnectivityCheck();alert(`🎯 Battle + Prize Wheel Check
-Passed: ${r.pass}/${r.total}
-
-${r.checks.map(c=>`${c.ok?'✅':'❌'} ${c.name}`).join('\n')}`);}} className="w-full p-3 rounded-xl font-bold bg-gradient-to-r from-fuchsia-600 to-pink-700 hover:opacity-90 text-white transition-all">Check Battle + Prize Wheel</button>
-                                            <button onClick={clearBattleAndLeaderboardAccounts} className="w-full p-3 rounded-xl font-bold bg-gradient-to-r from-red-800 to-black hover:opacity-90 text-white transition-all">Clear All Local Accounts (Battle/Leaderboard Reset)</button>
                                             <button 
                                                 onClick={exportUserData} 
                                                 className="w-full p-3 rounded-xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-90 text-white transition-all flex items-center justify-center gap-2"
@@ -6116,21 +6052,6 @@ ${r.checks.map(c=>`${c.ok?'✅':'❌'} ${c.name}`).join('\n')}`);}} className="w
                             </div>
                         )}
 
-
-                        {showPostLoginAuditPrompt&&(
-                            <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={()=>setShowPostLoginAuditPrompt(false)}>
-                                <div className={`${appTheme==='dark'?'bg-gray-900 border-gray-700 text-white':'bg-white border-gray-200 text-gray-900'} max-w-md w-full rounded-2xl border p-5 shadow-2xl`} onClick={e=>e.stopPropagation()}>
-                                    <h3 className="text-xl font-black mb-2">🛡️ Quick System Check</h3>
-                                    <p className="text-sm opacity-80 mb-4">Run a full gameplay health check now? This helps verify time, battle, goals, habits, shop, settings, wheel, timezone, anti-cheat, OTP, and animation systems after login.</p>
-                                    <div className="flex gap-2">
-                                        <button onClick={()=>setShowPostLoginAuditPrompt(false)} className="flex-1 px-3 py-2 rounded-lg bg-gray-700 text-white font-bold">Later</button>
-                                        <button onClick={()=>{const p=runPrePublishFinalCheck();const t=p.timeReport;const a=p.featureReport;const b=p.completeReport;const c=p.ultimateReport;alert(`✅ Deep system checks done
-Time: ${t.pass}/${t.total}\nFull: ${a.passCount}/${a.total}\nComplete: ${b.pass}/${b.total}
-Ultimate: ${c.pass}/${c.total}`);setShowPostLoginAuditPrompt(false);}} className="flex-1 px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold">Run Checks</button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
 
                         {showSet&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 p-4"><div className="adaptive-modal adaptive-card bg-gray-800 rounded-2xl p-8 max-w-2xl w-full border border-gray-700 animate-modal-slide animate-glow-ring max-h-screen overflow-y-auto scrollbar-hide"><h2 className="text-3xl font-bold mb-6 flex items-center gap-2"><Settings/><span>Settings</span></h2><div className="space-y-4 mb-6"><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-2"><User/><span className="text-gray-400 text-sm">Username</span></div><p className="text-xl font-bold">{user}</p></div><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-2"><Trophy/><span className="text-gray-400 text-sm">Progress</span></div><p className="text-xl font-bold">{ct.name} - Level {lvl}</p><p className="text-sm text-gray-400 mt-1">{coins.toLocaleString()} Coins 💰</p></div><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-2"><Star/><span className="text-gray-400 text-sm">Stats</span></div><p className="text-lg">{stats.tasksCompleted} tasks • {stats.currentStreak} day streak</p><p className="text-sm text-gray-400">Best: {stats.longestStreak} days</p></div><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-3"><Clock/><span className="text-gray-400 text-sm">Time Zone</span></div><p className="text-xs text-gray-400 mb-2">Current: <span className="text-cyan-300 font-bold">{getTimezoneClock().pretty} ({getTimezoneClock().shortZone})</span></p><select value={timeZone} onChange={(e)=>setTimeZone(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">{timeZoneChoices.map(tz=><option key={tz} value={tz}>{tz}</option>)}</select></div><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-2"><Clock/><span className="text-gray-400 text-sm">Activity Log (Last {activityLog.length})</span></div><div className="max-h-48 overflow-y-auto scrollbar-hide space-y-2 mt-2">{activityLog.length===0?<p className="text-gray-500 text-sm">No activity yet</p>:activityLog.slice(0,20).map((log,i)=><div key={i} className="bg-gray-800 rounded p-2 text-xs"><p className="text-gray-400">{log.date}</p><p className="text-white font-bold">{log.type==='task_completed'?`✅ ${log.details.task}`:log.type==='level_up'?`⬆️ Level ${log.details.level}`:log.type==='tier_up'?`🌟 ${log.details.tier}`:log.type}</p>{log.details.xp&&<p className="text-yellow-400">+{log.details.xp} XP, +{log.details.coins} Coins</p>}</div>)}</div></div></div><div className="space-y-3"><button onClick={exportUserData} className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-90 transition-all flex items-center justify-center gap-2"><Star/><span>Export Data</span></button><button onClick={logout} className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-orange-500 to-red-500 hover:opacity-90 transition-all flex items-center justify-center gap-2"><LogOut/><span>Logout</span></button><button onClick={deleteAcc} className="w-full py-3 rounded-xl font-bold bg-red-900 hover:bg-red-800 transition-all text-red-200">Delete Account</button><button onClick={()=>setShowSet(false)} className="w-full py-3 rounded-xl font-bold bg-gray-700 hover:bg-gray-600 transition-all">Close</button></div></div></div>}
 
