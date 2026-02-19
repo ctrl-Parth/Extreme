@@ -765,6 +765,7 @@
             const [musicMood,setMusicMood]=useState('all');
             const [musicAutoplay,setMusicAutoplay]=useState(APP_CONFIG.music.autoplayOnTrackChange);
             const [deletedTasks,setDeletedTasks]=useState([]);
+            const [graveyardResurrections,setGraveyardResurrections]=useState(0);
             const [showDeletedTasks,setShowDeletedTasks]=useState(false);
             const [taskAnimation,setTaskAnimation]=useState({});
             const [showFocus,setShowFocus]=useState(false);
@@ -966,6 +967,7 @@
                 add('Leaderboard feature ready',Array.isArray(leaderboard));
                 add('Goals feature ready',Array.isArray(goals));
                 add('Habits feature ready',Array.isArray(habits));
+                add('Task graveyard feature ready',Array.isArray(deletedTasks));
                 add('Focus feature ready',typeof startFocusSession==='function');
                 add('OTP feature ready',typeof sendForgotOtp==='function'&&APP_CONFIG.otp.maxAttempts>=3);
                 add('Security feature ready',typeof registerSecurityViolation==='function');
@@ -1023,6 +1025,7 @@
                 add('goals','Goal progress bounded',goals.every(g=>(g.progress||0)>=0&&(g.progress||0)<=100));
                 add('habits','Habit reminder time shape',habits.every(h=>!h.reminderTime||/^\d{2}:\d{2}$/.test(h.reminderTime)));
                 add('habits','Habit streak non-negative',habits.every(h=>(h.streak||0)>=0&&(h.longestStreak||0)>=0));
+                add('graveyard','Deleted tasks array valid',Array.isArray(deletedTasks));
                 // Shop / secrets / seasons / easter-eggs
                 add('shop','Shop item IDs unique',new Set(shopItems.map(i=>i.id)).size===shopItems.length,`count=${shopItems.length}`);
                 add('shop','Seasonal secret tiers exist',shopItems.some(i=>i.id==='s6_theme_infinity')&&shopItems.some(i=>i.id==='s6_border_infinity'));
@@ -1065,6 +1068,7 @@
                 add('Ranked board generated',Array.isArray(rankedBoard));
                 add('OTP sender configured',typeof sendForgotOtp==='function');
                 add('Deletion lock wired',typeof deleteAcc==='function');
+                add('Graveyard resurrection counter sane',Number(graveyardResurrections)>=0);
                 add('Strict username uniqueness active',typeof isUsernameTakenStrict==='function');
                 add('Time system available',typeof getTrustedTime==='function'&&typeof getTrustedHour==='function');
                 add('Timezone choices available',Array.isArray(timeZoneChoices)&&timeZoneChoices.length>10);
@@ -1460,6 +1464,8 @@ const runBugChecks=()=>{
                         }));
 
                     setTasks(data.tasks||[]);
+                    setDeletedTasks(Array.isArray(data.deletedTasks)?data.deletedTasks:[]);
+                    setGraveyardResurrections(Math.max(0,data.graveyardResurrections||0));
                     setXp(Math.max(0,data.xp||0));
                     setTotalXp(Math.max(0,data.totalXp||0));
                     setCoins(Math.max(0,data.coins||0));
@@ -1516,7 +1522,7 @@ const runBugChecks=()=>{
                     .filter(b=>b&&sanitizeBoosterExpiry(b.expires)>trustedNow)
                     .map(b=>({...b,expires:sanitizeBoosterExpiry(b.expires),type:normalizeBoosterType(b.type)}));
                 // Social data (friends, challenges, tradeOffers) stored separately in -social key
-                const data={tasks,xp,totalXp,coins,lvl,tier,season,charIdx,theme,stats,owned,achs,activeBoosters:sanitizedBoosters,currentTitle,currentBorder,currentEffect,specialChars,customThemes,activityLog,friends,friendRequests,challenges,elo,eloHistory,profilePic,tradeOffers,habits,goals,tutorialCompleted,timeZone};
+                const data={tasks,deletedTasks,graveyardResurrections,xp,totalXp,coins,lvl,tier,season,charIdx,theme,stats,owned,achs,activeBoosters:sanitizedBoosters,currentTitle,currentBorder,currentEffect,specialChars,customThemes,activityLog,friends,friendRequests,challenges,elo,eloHistory,profilePic,tradeOffers,habits,goals,tutorialCompleted,timeZone};
                 auditProgressJump();
                 data.signatureVersion=1;
                 data.dataSignature=signDataPayload(user,data);
@@ -2090,6 +2096,7 @@ const runBugChecks=()=>{
                 setOtpModal(null);
                 setForgotOtpMeta(null);
                 setDeletedTasks([]);
+                setGraveyardResurrections(0);
                 setFocusSessions(0);
                 setTaskAnimation({});
                 setShowDeletedTasks(false);
@@ -2712,7 +2719,7 @@ Make sure the username is spelled correctly (it's case-insensitive). They must h
                     updateLeaderboard();
                 }
             },[showBattle]);
-            useEffect(()=>{if(user)saveData()},[tasks,xp,totalXp,coins,lvl,tier,season,charIdx,theme,stats,owned,achs,activeBoosters,currentTitle,currentBorder,currentEffect,specialChars,customThemes,activityLog,friends,friendRequests,challenges,elo,eloHistory,profilePic,tradeOffers,habits,goals,timeZone,tutorialCompleted,user]);
+            useEffect(()=>{if(user)saveData()},[tasks,deletedTasks,graveyardResurrections,xp,totalXp,coins,lvl,tier,season,charIdx,theme,stats,owned,achs,activeBoosters,currentTitle,currentBorder,currentEffect,specialChars,customThemes,activityLog,friends,friendRequests,challenges,elo,eloHistory,profilePic,tradeOffers,habits,goals,timeZone,tutorialCompleted,user]);
             useEffect(()=>{
                 if(!user)return;
                 const key='last-login-audit-prompt';
@@ -3272,13 +3279,15 @@ Make sure the username is spelled correctly (it's case-insensitive). They must h
             const restoreTask=(id)=>{
                 const t=deletedTasks.find(x=>x.id===id);
                 if(!t)return;
-                
-                // Trigger restore animation
-                setTasks([...tasks,t]);
+                const restored={...t,completed:false,completedAt:null,deletedAt:null,resurrectedAt:getTrustedTime()};
+                const bonusXp=Math.max(5,Math.floor((t.xpRew||20)*0.2));
+                setTasks([...tasks,restored]);
                 setDeletedTasks(deletedTasks.filter(x=>x.id!==id));
-                
-                // Log activity
-                logActivity('task_restored',{task:t.title});
+                setXp(prev=>prev+bonusXp);
+                setTotalXp(prev=>prev+bonusXp);
+                setGraveyardResurrections(prev=>prev+1);
+                showXpAnim(bonusXp);
+                logActivity('task_restored',{task:t.title,bonusXp,source:'graveyard'});
             };
 
             const clearDeletedTasks=()=>{
@@ -3287,6 +3296,7 @@ Make sure the username is spelled correctly (it's case-insensitive). They must h
                 if(!confirmClear)return;
                 
                 setDeletedTasks([]);
+                setGraveyardResurrections(0);
                 logActivity('trash_cleared',{count:deletedTasks.length});
             };
 
@@ -5068,6 +5078,17 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                                 </button>
                                             </div>
                                         </div>
+                                        {(()=>{
+                                            const byCat={};
+                                            const hall=deletedTasks.filter(t=>t.dueDate&&new Date(t.dueDate).getTime()<getTrustedTime());
+                                            deletedTasks.forEach(t=>{const k=t.category||'uncategorized';byCat[k]=(byCat[k]||0)+1;});
+                                            const top=Object.entries(byCat).sort((a,b)=>b[1]-a[1])[0];
+                                            return <div className="mb-3 space-y-2">
+                                                <div className="bg-gray-900/60 border border-red-500/30 rounded-lg p-2 text-xs text-red-200">💀 Most abandoned type: <span className="font-black">{top?`${top[0]} (${top[1]})`:'none yet'}</span> • Resurrections: <span className="font-black text-green-300">{graveyardResurrections}</span></div>
+                                                {hall.length>0&&<div className="bg-yellow-900/30 border border-yellow-500/30 rounded-lg p-2 text-xs text-yellow-200">🏴 Hall of Shame: {hall.slice(0,3).map(h=>h.title).join(' • ')}{hall.length>3?' ...':''}</div>}
+                                                <p className="text-xs text-gray-400">Motivation through guilt lol: resurrect old tasks to earn bonus XP.</p>
+                                            </div>;
+                                        })()}
                                         <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-hide">
                                             {deletedTasks.map((t,i)=>(
                                                 <div key={t.id} className="bg-gray-800 bg-opacity-50 rounded-lg p-3 flex items-center justify-between animate-task-restore" style={{animationDelay:`${i*0.05}s`}}>
@@ -5076,7 +5097,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                                         <p className="text-xs text-gray-500">Deleted {Math.floor((getTrustedTime()-t.deletedAt)/1000)}s ago</p>
                                                     </div>
                                                     <button onClick={()=>restoreTask(t.id)} className="px-3 py-1 bg-green-600 hover:bg-green-500 rounded font-bold text-sm flex items-center gap-1 transition-all">
-                                                        ↺ Restore
+                                                        ↺ Resurrect (+XP)
                                                     </button>
                                                 </div>
                                             ))}
