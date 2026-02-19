@@ -4501,29 +4501,6 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                         
                                         
                                     </div>
-                                    <button 
-                                        onClick={()=>{
-                                            const accounts=[];
-                                            for(let i=0;i<localStorage.length;i++){
-                                                const key=localStorage.key(i);
-                                                if(key&&key.endsWith('-account')){
-                                                    try{
-                                                        const acc=JSON.parse(localStorage.getItem(key));
-                                                        accounts.push({username:acc.username,created:new Date(acc.createdAt).toLocaleDateString()});
-                                                    }catch(e){}
-                                                }
-                                            }
-                                            if(accounts.length>0){
-                                                const msg=accounts.map(a=>`• ${a.username} (created ${a.created})`).join('\\n');
-                                                alert(`📋 Found ${accounts.length} account(s):\\n\\n${msg}\\n\\nTotal data items: ${localStorage.length}\\n\\nTry logging in with your username!`);
-                                            }else{
-                                                alert(`❌ No accounts found\\n\\nTotal localStorage items: ${localStorage.length}\\n\\n⚠️ Possible reasons:\\n• Different browser\\n• Incognito mode\\n• Cache was cleared\\n• Different device`);
-                                            }
-                                        }}
-                                        className="mt-4 px-4 py-2 text-sm text-gray-400 hover:text-gray-200 underline transition-all"
-                                    >
-                                        🔍 Check for Lost Accounts
-                                    </button>
                                     <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 opacity-70 adaptive-grid">
                                         {tiers.filter(t=>t.season===1).slice(0,4).map((t,i)=><div key={i} className="text-center animate-quantum"><div className="text-2xl mb-1">{t.icon}</div><div className="text-xs text-cyan-300">{t.name}</div></div>)}
                                     </div>
