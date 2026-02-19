@@ -1412,8 +1412,17 @@
                 const expiryText=`${Math.round(APP_CONFIG.otp.expiryMs/60000)} minutes`;
                 const baseMessage=`Hi ${username}, your P.I.V.T OTP code is ${otp}. It expires in ${expiryText}.`;
                 const payloads=[
-                    {to_email:email,to_name:username,user_email:email,user_name:username,from_name:'P.I.V.T Security',reply_to:'parthbaghele@gmail.com',otp_code:otp,app_name:'P.I.V.T',expires_in:expiryText,message:baseMessage,subject:'P.I.V.T OTP'},
-                    {email,name:username,passcode:otp,otp:otp,code:otp,message:baseMessage,time_to_expire:expiryText,subject:'P.I.V.T OTP',to_email:email}
+                    {
+                        to_email:email,to_name:username,user_email:email,user_name:username,
+                        to:email,recipient:email,recipient_email:email,target_email:email,toEmail:email,
+                        from_name:'P.I.V.T Security',reply_to:'parthbaghele@gmail.com',
+                        otp_code:otp,app_name:'P.I.V.T',expires_in:expiryText,message:baseMessage,subject:'P.I.V.T OTP'
+                    },
+                    {
+                        email,name:username,passcode:otp,otp:otp,code:otp,message:baseMessage,
+                        time_to_expire:expiryText,subject:'P.I.V.T OTP',
+                        to_email:email,to:email,recipient:email,recipient_email:email,target_email:email,toEmail:email
+                    }
                 ];
                 const failures=[];
                 for(const payload of payloads){
@@ -1484,7 +1493,7 @@
                     const firstFailure=Array.isArray(err?.failures)&&err.failures.length?err.failures[0]:null;
                     const status=firstFailure?.status||err?.status||0;
                     const detail=(firstFailure?.text||err?.text||err?.message||'').toString();
-                    if(status===400)setAuthErr(`Email delivery failed (400): template mismatch. ${detail}`.trim());
+                    if(status===400)setAuthErr(`Email delivery failed (400): template mismatch. In EmailJS template, set 'To Email' to {{to_email}} and remove hardcoded recipient. ${detail}`.trim());
                     else if(status===401||status===403)setAuthErr('Email delivery failed: invalid EmailJS Public Key. Double-check it.');
                     else if(status===429)setAuthErr('Too many emails sent — EmailJS free tier limit hit. Wait a few minutes.');
                     else setAuthErr(`Failed to send OTP email. ${detail}`.trim());
