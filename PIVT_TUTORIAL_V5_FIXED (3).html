@@ -1718,9 +1718,24 @@ const runBugChecks=()=>{
             };
 
             const ACCOUNT_REGISTRY_KEY='pivt-account-registry-v1';
+            const USED_USERNAME_REGISTRY_KEY='pivt-used-usernames-v1';
             const normalizeUsernameKey=(username)=>sanitizeInput(username||'',20).toLowerCase();
             const readAccountRegistry=()=>{try{return JSON.parse(localStorage.getItem(ACCOUNT_REGISTRY_KEY)||'{}')||{};}catch(e){return{};}};
             const writeAccountRegistry=(registry)=>{try{localStorage.setItem(ACCOUNT_REGISTRY_KEY,JSON.stringify(registry||{}));}catch(e){}};
+            const readUsedUsernameRegistry=()=>{try{return JSON.parse(localStorage.getItem(USED_USERNAME_REGISTRY_KEY)||'[]')||[];}catch(e){return[];}};
+            const writeUsedUsernameRegistry=(items)=>{try{localStorage.setItem(USED_USERNAME_REGISTRY_KEY,JSON.stringify(Array.from(new Set(items||[]))));}catch(e){}};
+            const reserveUsernameOnce=(username)=>{
+                const normalized=normalizeUsernameKey(username);
+                if(!normalized)return;
+                const used=new Set(readUsedUsernameRegistry().map(u=>normalizeUsernameKey(u)).filter(Boolean));
+                used.add(normalized);
+                writeUsedUsernameRegistry(Array.from(used));
+            };
+            const isUsernameReserved=(username)=>{
+                const normalized=normalizeUsernameKey(username);
+                if(!normalized)return false;
+                return readUsedUsernameRegistry().some(u=>normalizeUsernameKey(u)===normalized);
+            };
             const rebuildAccountRegistry=()=>{
                 const registry={};
                 try{
@@ -1772,11 +1787,22 @@ const runBugChecks=()=>{
             const wipeAllAccountsForFreshStart=()=>{
                 const keys=[];
                 try{
+                    const used=new Set(readUsedUsernameRegistry().map(u=>normalizeUsernameKey(u)).filter(Boolean));
                     for(let i=0;i<localStorage.length;i++){
                         const k=localStorage.key(i);
                         if(!k)continue;
+                        if(k.endsWith('-account')){
+                            try{
+                                const raw=localStorage.getItem(k);
+                                const acc=raw?JSON.parse(raw):null;
+                                const keyName=k.startsWith('user-')?k.slice(5).replace(/-account$/,''):k.replace(/-account$/,'');
+                                const uname=normalizeUsernameKey((acc&&acc.username)||keyName);
+                                if(uname)used.add(uname);
+                            }catch(e){}
+                        }
                         if(k.endsWith('-account')||k.endsWith('-data')||k.endsWith('-data-backup')||k.endsWith('-social'))keys.push(k);
                     }
+                    writeUsedUsernameRegistry(Array.from(used));
                     ['current-user','login_attempts','pending-delete-at',ACCOUNT_REGISTRY_KEY].forEach(k=>keys.push(k));
                     const unique=[...new Set(keys)];
                     unique.forEach(k=>localStorage.removeItem(k));
@@ -1935,6 +1961,7 @@ const runBugChecks=()=>{
                 if(authForm.password!==authForm.confirmPassword)return setAuthErr('Passwords do not match');
                 
                 // Check if username exists
+                if(isUsernameReserved(username))return setAuthErr('This username has already been used before and cannot be reused.');
                 if(isUsernameTakenStrict(username)||getAccountKeyByUsername(username))return setAuthErr('Username already taken (case-insensitive)');
                 
                 // Check if email exists
@@ -1972,6 +1999,7 @@ const runBugChecks=()=>{
                 accountData.trustBadge=createTrustBadge(username);
                 S.set(`user-${username}-account`,JSON.stringify(accountData));
                 registerAccountInRegistry(username,`user-${username}-account`);
+                reserveUsernameOnce(username);
                 S.set('current-user',username);
                 setUser(username);
                 setProfilePic('');
@@ -2204,6 +2232,7 @@ const runBugChecks=()=>{
                     try{await FB.setFriends(username,[]);}catch(e){}
                     try{await FB.del(`inbox/${username}`);}catch(e){}
                 }
+                reserveUsernameOnce(username);
                 S.delete(`user-${username}-account`);
                 removeAccountFromRegistry(username);
                 S.delete(`user-${username}-data`);
@@ -2734,7 +2763,7 @@ Make sure the username is spelled correctly (it's case-insensitive). They must h
             },[user]);
 
             useEffect(()=>{
-                const resetMarker='pivt-fresh-start-v1';
+                const resetMarker='pivt-fresh-start-v2';
                 if(!localStorage.getItem(resetMarker)){
                     const removed=wipeAllAccountsForFreshStart();
                     localStorage.setItem(resetMarker,String(getTrustedTime()));
