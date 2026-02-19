@@ -2110,43 +2110,25 @@ const runBugChecks=()=>{
 
 
             const launchDemoExperience=(openTour=false)=>{
-                const demoName='demo-pilot';
                 stopFocusTimer();
                 if(audioRef.current){
                     audioRef.current.pause();
                     audioRef.current.currentTime=0;
                 }
 
-                setUser(demoName);
-                setAuthMode('welcome');
                 setAuthErr('');
                 setResetMsg('');
                 setForgotOtpMeta(null);
                 setOtpModal(null);
-                setSecurityMode('normal');
-                setSecurityBanner({message:'🧪 Demo mode active. No signup needed.',mode:'normal',at:getTrustedTime()});
-                setTimeout(()=>setSecurityBanner(null),2600);
 
-                setTasks([
-                    {id:getTrustedTime(),title:'Complete your first quick task',difficulty:'easy',duration:'15min',category:'personal',dueDate:'',priority:2,completed:false,xpRew:diffs.easy.xp,createdAt:getTrustedTime()},
-                    {id:getTrustedTime()+1,title:'Open Focus Mode and run a 5-minute sprint',difficulty:'medium',duration:'30min',category:'work',dueDate:'',priority:3,completed:false,xpRew:diffs.medium.xp,createdAt:getTrustedTime()},
-                    {id:getTrustedTime()+2,title:'Spin the wheel after checking achievements',difficulty:'hard',duration:'45min',category:'personal',dueDate:'',priority:4,completed:false,xpRew:diffs.hard.xp,createdAt:getTrustedTime()}
-                ]);
-                setDeletedTasks([]);
-                setGraveyardResurrections(0);
-                setXp(120);
-                setTotalXp(120);
-                setCoins(350);
-                setLvl(2);
-                setTier(0);
-                setSeason(1);
-                setStats({tasksCompleted:1,currentStreak:1,longestStreak:1,lastTaskDate:new Date(getTrustedTime()).toDateString(),lastLoginDate:new Date(getTrustedTime()).toDateString(),streakSaverUsedThisWeek:false,weekStartDate:null});
-                setShowFocus(false);
-                setFocusTimer(false);
-                setFocusTask(null);
-                setFocusTimeRemaining(0);
-                setMusicEnabled(false);
-                setMusicPlaying(false);
+                const report=runPrePublishFinalCheck();
+                const total=report.checks.length||1;
+                const passed=report.checks.filter(c=>c.ok).length;
+                const passRate=Math.round((passed/total)*100);
+
+                setSecurityMode('normal');
+                setSecurityBanner({message:`🧭 Guided demo ready • Bug checks ${passed}/${total} (${passRate}%)`,mode:'normal',at:getTrustedTime()});
+                setTimeout(()=>setSecurityBanner(null),3200);
 
                 setTutorialCompleted(false);
                 setTutorialStep(openTour?0:5);
@@ -4488,8 +4470,8 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                     <div className="space-y-4 adaptive-stack">
                                         <button onClick={()=>setAuthMode('login')} className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-cyan-500 to-blue-500 hover:opacity-90 transition-all transform hover:scale-105 shadow-lg">Login</button>
                                         <button onClick={()=>setAuthMode('signup')} className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 transition-all transform hover:scale-105 shadow-lg">Create Account</button>
-                                        <button onClick={()=>launchDemoExperience(false)} className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-90 transition-all">Try Demo</button>
-                                        <button onClick={()=>launchDemoExperience(true)} className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-indigo-500 to-violet-600 hover:opacity-90 transition-all">Start App Tour</button>
+                                        <button onClick={()=>launchDemoExperience(false)} className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-90 transition-all">Open Game Flow Guide</button>
+                                        <button onClick={()=>launchDemoExperience(true)} className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-indigo-500 to-violet-600 hover:opacity-90 transition-all">Start Interactive Tour</button>
                                     </div>
                                     <button 
                                         onClick={()=>{
@@ -4638,6 +4620,16 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                     {showTutorial&&(
                         <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-95 p-4 overflow-y-auto" style={{zIndex:1000}}>
                             <div className="max-w-4xl w-full mx-4 my-auto animate-scaleIn max-h-screen overflow-y-auto">
+                                <div className="mb-3 bg-gradient-to-r from-cyan-900/40 via-indigo-900/40 to-purple-900/40 border border-cyan-500/60 rounded-2xl p-4 animate-glow-ring">
+                                    <p className="text-xs uppercase tracking-widest text-cyan-300 font-bold mb-2">🧭 Game Flow Guide</p>
+                                    <div className="grid md:grid-cols-4 gap-2 text-xs">
+                                        <div className="bg-black/30 rounded-lg p-2 animate-float-soft"><p className="font-black text-cyan-300">1) Plan</p><p className="text-gray-300">Create tasks, habits, goals.</p></div>
+                                        <div className="bg-black/30 rounded-lg p-2 animate-float-soft" style={{animationDelay:'0.25s'}}><p className="font-black text-green-300">2) Execute</p><p className="text-gray-300">Focus session + music + streaks.</p></div>
+                                        <div className="bg-black/30 rounded-lg p-2 animate-float-soft" style={{animationDelay:'0.5s'}}><p className="font-black text-yellow-300">3) Reward</p><p className="text-gray-300">Gain XP, coins, unlocks.</p></div>
+                                        <div className="bg-black/30 rounded-lg p-2 animate-float-soft" style={{animationDelay:'0.75s'}}><p className="font-black text-pink-300">4) Compete</p><p className="text-gray-300">Battle, achievements, leaderboard.</p></div>
+                                    </div>
+                                </div>
+
                                 <div className="mb-4 bg-gray-900/80 border border-cyan-500 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2">
                                     <p className="text-sm text-cyan-300">Tutorial Step {tutorialStep+1} / 6</p>
                                     <div className="flex gap-2">
