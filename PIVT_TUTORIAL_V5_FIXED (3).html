@@ -999,6 +999,7 @@
                 add('Ranked leaderboard engine active',typeof updateRankedLeaderboard==='function');
                 add('Final complete debug active',typeof runFinalCompleteDebug==='function');
                 add('Ultimate gameplay audit active',typeof runUltimateGameplayAudit==='function');
+                add('Pre-publish final check active',typeof runPrePublishFinalCheck==='function');
                 const passCount=checks.filter(c=>c.pass).length;
                 console.info(`✅ Full Feature Audit: ${passCount}/${checks.length} checks passed`,checks);
                 return {passCount,total:checks.length,checks};
@@ -1094,6 +1095,23 @@
                 const pass=checks.filter(c=>c.pass).length;
                 console.info(`🕒 Time System Debug: ${pass}/${checks.length} passed`,checks);
                 return {pass,total:checks.length,checks,now,zone,today,events};
+            };
+
+            const runPrePublishFinalCheck=()=>{
+                const timeReport=runTimeSystemDebug();
+                const bugReport=runBugChecks();
+                const featureReport=runFullFeatureAudit();
+                const completeReport=runFinalCompleteDebug();
+                const ultimateReport=runUltimateGameplayAudit();
+                const summary={
+                    time:`${timeReport.pass}/${timeReport.total}`,
+                    bug:`${bugReport.passCount}/${bugReport.total}`,
+                    feature:`${featureReport.passCount}/${featureReport.total}`,
+                    complete:`${completeReport.pass}/${completeReport.total}`,
+                    ultimate:`${ultimateReport.pass}/${ultimateReport.total}`
+                };
+                console.info('🚀 Pre-Publish Final Check Summary',summary,{timeReport,bugReport,featureReport,completeReport,ultimateReport});
+                return {summary,timeReport,bugReport,featureReport,completeReport,ultimateReport};
             };
 
 const runBugChecks=()=>{
@@ -2656,6 +2674,11 @@ Make sure the username is spelled correctly (it's case-insensitive). They must h
             },[user,showBattle]);
 
             useEffect(()=>{
+                // one-time publish sanity check on first boot cycle
+                setTimeout(()=>{try{runPrePublishFinalCheck();}catch(e){console.warn('Pre-publish check failed to run',e);}},400);
+            },[]);
+
+            useEffect(()=>{
                 const resetMarker='pivt-fresh-start-v1';
                 if(!localStorage.getItem(resetMarker)){
                     const removed=wipeAllAccountsForFreshStart();
@@ -3281,8 +3304,8 @@ Make sure the username is spelled correctly (it's case-insensitive). They must h
                 if(!t)return;
                 const restored={...t,completed:false,completedAt:null,deletedAt:null,resurrectedAt:getTrustedTime()};
                 const bonusXp=Math.max(5,Math.floor((t.xpRew||20)*0.2));
-                setTasks([...tasks,restored]);
-                setDeletedTasks(deletedTasks.filter(x=>x.id!==id));
+                setTasks(prev=>[...prev,restored]);
+                setDeletedTasks(prev=>prev.filter(x=>x.id!==id));
                 setXp(prev=>prev+bonusXp);
                 setTotalXp(prev=>prev+bonusXp);
                 setGraveyardResurrections(prev=>prev+1);
@@ -6005,7 +6028,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                     <p className="text-sm opacity-80 mb-4">Run a full gameplay health check now? This helps verify time, battle, goals, habits, shop, settings, wheel, timezone, anti-cheat, OTP, and animation systems after login.</p>
                                     <div className="flex gap-2">
                                         <button onClick={()=>setShowPostLoginAuditPrompt(false)} className="flex-1 px-3 py-2 rounded-lg bg-gray-700 text-white font-bold">Later</button>
-                                        <button onClick={()=>{const t=runTimeSystemDebug();const a=runFullFeatureAudit();const b=runFinalCompleteDebug();const c=runUltimateGameplayAudit();alert(`✅ Deep system checks done
+                                        <button onClick={()=>{const p=runPrePublishFinalCheck();const t=p.timeReport;const a=p.featureReport;const b=p.completeReport;const c=p.ultimateReport;alert(`✅ Deep system checks done
 Time: ${t.pass}/${t.total}\nFull: ${a.passCount}/${a.total}\nComplete: ${b.pass}/${b.total}
 Ultimate: ${c.pass}/${c.total}`);setShowPostLoginAuditPrompt(false);}} className="flex-1 px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold">Run Checks</button>
                                     </div>
