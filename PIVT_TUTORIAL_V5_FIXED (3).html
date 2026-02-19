@@ -749,6 +749,7 @@
             const [battleTab,setBattleTab]=useState('friends');
             const [rankedBoard,setRankedBoard]=useState([]);
             const [specialEvent,setSpecialEvent]=useState({doubleXpWeekend:false,goldenHour:false,megaWheel:false,label:''});
+            const [showPostLoginAuditPrompt,setShowPostLoginAuditPrompt]=useState(false);
             const [leaderboard,setLeaderboard]=useState([]);
             const detectedTimeZone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
             const [countdownTick,setCountdownTick]=useState(0);
@@ -2590,6 +2591,17 @@ Make sure the username is spelled correctly (it's case-insensitive). They must h
                 }
             },[showBattle]);
             useEffect(()=>{if(user)saveData()},[tasks,xp,totalXp,coins,lvl,tier,season,charIdx,theme,stats,owned,achs,activeBoosters,currentTitle,currentBorder,currentEffect,specialChars,customThemes,activityLog,friends,friendRequests,challenges,elo,eloHistory,profilePic,tradeOffers,habits,goals,timeZone,tutorialCompleted,user]);
+            useEffect(()=>{
+                if(!user)return;
+                const key='last-login-audit-prompt';
+                const todayKey=new Date(getTrustedTime()).toDateString();
+                const last=localStorage.getItem(key)||'';
+                if(last!==`${user}::${todayKey}`){
+                    setShowPostLoginAuditPrompt(true);
+                    localStorage.setItem(key,`${user}::${todayKey}`);
+                }
+            },[user]);
+
             useEffect(()=>{runBugChecks();},[user,musicMood,musicVolume,selectedTrackIndex,tasks.length,goals.length,habits.length,challenges.length,tradeOffers.length,friends.length,friendRequests.length]);
             useEffect(()=>{
                 if(!user||auditRanRef.current)return;
@@ -5737,7 +5749,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
 
                         {showSettings&&(
                             <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 animate-fadeIn" onClick={()=>setShowSettings(false)}>
-                                <div className={`${appTheme==='dark'?'bg-gray-800 border-gray-700':'bg-white border-gray-200'} rounded-2xl p-6 max-w-md w-full border-2 shadow-2xl animate-modal-slide animate-glow-ring`} onClick={e=>e.stopPropagation()}>
+                                <div className={`${appTheme==='dark'?'bg-gray-800 border-gray-700':'bg-white border-gray-200'} rounded-2xl p-6 max-w-2xl w-full border-2 shadow-2xl animate-modal-slide animate-glow-ring max-h-[92vh] overflow-y-auto scrollbar-hide`} onClick={e=>e.stopPropagation()}>
                                     <div className="flex justify-between items-center mb-6">
                                         <h2 className={`text-3xl font-bold flex items-center gap-2 ${appTheme==='dark'?'text-white':'text-gray-900'}`}>
                                             <Settings/><span>Settings</span>
@@ -5823,9 +5835,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                         {/* Actions */}
                                         <div className="space-y-2 pt-2">
                                             <button onClick={()=>{const report=runFullFeatureAudit();alert(`🧪 Full Feature Audit: ${report.passCount}/${report.total} checks passed`);}} className="w-full p-3 rounded-xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-90 text-white transition-all">Run Full Feature Audit</button>
-                                            <button onClick={()=>{const report=runFinalCompleteDebug();alert(`🧪 FINAL COMPLETE DEBUG: ${report.pass}/${report.total} checks passed`);}} className="w-full p-3 rounded-xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 hover:opacity-90 text-white transition-all">Run Final Complete Debug</button>
-                                            <button onClick={()=>{const report=runUltimateGameplayAudit();alert(`🧪 ULTIMATE GAMEPLAY AUDIT: ${report.pass}/${report.total} checks passed`);}} className="w-full p-3 rounded-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:opacity-90 text-white transition-all">Run Ultimate Gameplay Audit</button>
-                                            <button 
+                                                                                        <button 
                                                 onClick={exportUserData} 
                                                 className="w-full p-3 rounded-xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-90 text-white transition-all flex items-center justify-center gap-2"
                                             >
@@ -5839,6 +5849,23 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                             </button>
                                             <button onClick={deleteAcc} className="w-full p-3 rounded-xl font-bold bg-gradient-to-r from-red-700 to-red-900 hover:opacity-90 text-white transition-all">{deleteRequestAt?`Complete Account Delete (${Math.max(0,Math.ceil(((deleteRequestAt+86400000)-getTrustedTime())/3600000))}h)`:'Request Account Deletion (24h lock)'}</button>
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+
+                        {showPostLoginAuditPrompt&&(
+                            <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={()=>setShowPostLoginAuditPrompt(false)}>
+                                <div className={`${appTheme==='dark'?'bg-gray-900 border-gray-700 text-white':'bg-white border-gray-200 text-gray-900'} max-w-md w-full rounded-2xl border p-5 shadow-2xl`} onClick={e=>e.stopPropagation()}>
+                                    <h3 className="text-xl font-black mb-2">🛡️ Quick System Check</h3>
+                                    <p className="text-sm opacity-80 mb-4">Run a full gameplay health check now? This helps verify time, battle, goals, habits, shop, settings, wheel, timezone, anti-cheat, OTP, and animation systems after login.</p>
+                                    <div className="flex gap-2">
+                                        <button onClick={()=>setShowPostLoginAuditPrompt(false)} className="flex-1 px-3 py-2 rounded-lg bg-gray-700 text-white font-bold">Later</button>
+                                        <button onClick={()=>{const a=runFullFeatureAudit();const b=runFinalCompleteDebug();const c=runUltimateGameplayAudit();alert(`✅ System checks done
+Full: ${a.passCount}/${a.total}
+Complete: ${b.pass}/${b.total}
+Ultimate: ${c.pass}/${c.total}`);setShowPostLoginAuditPrompt(false);}} className="flex-1 px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold">Run Checks</button>
                                     </div>
                                 </div>
                             </div>
