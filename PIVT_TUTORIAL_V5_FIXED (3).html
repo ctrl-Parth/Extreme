@@ -2585,10 +2585,13 @@ Make sure the username is spelled correctly (it's case-insensitive). They must h
             // ── TRADE FUNCTIONS ──
 
             const getRarityLevel=(itemId)=>{const item=shopItems.find(i=>i.id===itemId);return item?item.rarity:0;};
+            const getItemTierRequirement=(itemId)=>{const item=shopItems.find(i=>i.id===itemId);return Math.max(0,Math.min(41,Number(item?.minT||0)));};
+            const isItemWithinTradeTierWindow=(itemId,baseTier=tier)=>Math.abs(getItemTierRequirement(itemId)-Math.max(0,Math.min(41,Number(baseTier||0))))<=1;
 
             const createTradeOffer=async(friendUsername,myItemId,theirItemId)=>{
                 if(!myItemId)return alert('Select an item you want to offer.');
                 if(!theirItemId)return alert('Select an item you want to request.');
+                if(!isItemWithinTradeTierWindow(myItemId)||!isItemWithinTradeTierWindow(theirItemId))return alert('🔒 Trade visibility rule: you can only trade items within 1 tier above or below your current tier.');
                 if(Math.abs(getRarityLevel(myItemId)-getRarityLevel(theirItemId))>1)return alert('⚖️ Trade is too uneven — items must be within 1 rarity level.');
                 if(!owned.includes(myItemId))return alert('❌ You no longer own that item!');
                 const trade={
@@ -2690,6 +2693,7 @@ Make sure the username is spelled correctly (it's case-insensitive). They must h
                 add('Battle arrays connected',Array.isArray(friends)&&Array.isArray(challenges)&&Array.isArray(friendRequests));
                 add('Leaderboard arrays connected',Array.isArray(leaderboard)&&Array.isArray(rankedBoard));
                 add('Battle polling function connected',typeof pollBattleInbox==='function');
+                add('Trading tier window guard connected',typeof isItemWithinTradeTierWindow==='function');
                 add('Challenge updater connected',typeof updateChallengeProgress==='function');
                 add('Ranked updater connected',typeof updateRankedLeaderboard==='function');
                 add('Leaderboard updater connected',typeof updateLeaderboard==='function');
@@ -5585,6 +5589,10 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                             const pendingTrades=tradeOffers.filter(t=>t.to===user);
                             const inboxCount=pendingChallenges.length+pendingTrades.length+friendRequests.length;
                             const firebaseOn=FB.isReady();
+                            const tradableTierMin=Math.max(0,tier-1);
+                            const tradableTierMax=Math.min(41,tier+1);
+                            const tradableItemPool=shopItems.filter(item=>(item.type==='title'||item.type==='border')&&isItemWithinTradeTierWindow(item.id));
+                            const ownedTradableItemPool=tradableItemPool.filter(item=>owned.includes(item.id));
                             return(
                             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-2 md:p-4 adaptive-tight">
                                 <div className="adaptive-modal bg-gray-900 rounded-2xl max-w-4xl w-full border-2 border-purple-500 animate-modal-slide flex flex-col max-h-[96vh] overflow-hidden shadow-2xl">
@@ -5921,15 +5929,15 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                                         </select>
                                                         <select value={tradeForm.myItem} onChange={e=>setTradeForm(p=>({...p,myItem:e.target.value}))}
                                                             className="w-full bg-gray-900 px-4 py-2.5 rounded-xl border border-gray-600 focus:outline-none focus:border-yellow-500 text-white">
-                                                            <option value="">Your item to offer ({shopItems.filter(i=>(i.type==='title'||i.type==='border')&&owned.includes(i.id)).length} owned)...</option>
-                                                            {shopItems.filter(item=>(item.type==='title'||item.type==='border')&&owned.includes(item.id)).map(item=>(
+                                                            <option value="">Your item to offer ({ownedTradableItemPool.length} in tier window)...</option>
+                                                            {ownedTradableItemPool.map(item=>(
                                                                 <option key={item.id} value={item.id}>{item.n} · {rarities[item.rarity]?.n||'?'}</option>
                                                             ))}
                                                         </select>
                                                         <select value={tradeForm.theirItem} onChange={e=>setTradeForm(p=>({...p,theirItem:e.target.value}))}
                                                             className="w-full bg-gray-900 px-4 py-2.5 rounded-xl border border-gray-600 focus:outline-none focus:border-yellow-500 text-white">
-                                                            <option value="">Item you want in return...</option>
-                                                            {shopItems.filter(item=>item.type==='title'||item.type==='border').map(item=>(
+                                                            <option value="">Item you want in return (Tier {tradableTierMin} to {tradableTierMax})...</option>
+                                                            {tradableItemPool.map(item=>(
                                                                 <option key={item.id} value={item.id}>{item.n} · {rarities[item.rarity]?.n||'?'}</option>
                                                             ))}
                                                         </select>
@@ -5937,7 +5945,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                                             className="w-full py-3 bg-gradient-to-r from-yellow-600 to-orange-600 rounded-xl font-black hover:opacity-90 transition-all">
                                                             🤝 Send Trade Offer
                                                         </button>
-                                                        <p className="text-xs text-gray-500">⚖️ Items must be within 1 rarity level of each other to prevent unfair trades.</p>
+                                                        <p className="text-xs text-gray-500">⚖️ Items must be within 1 rarity level, and only items from tier window {tradableTierMin} to {tradableTierMax} are visible.</p>
                                                     </div>
                                                 }
                                             </div>
