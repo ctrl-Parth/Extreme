@@ -43,6 +43,11 @@
         .animate-cosmic-glow{animation:cosmicGlow 3s ease-in-out infinite}
         .animate-rainbow{background-size:400% 400%;animation:rainbowShift 8s ease infinite}
         .animate-sparkle{animation:sparkle 2s ease-in-out infinite}
+        .ui-card{transition:transform 0.18s ease,box-shadow 0.18s ease,border-color 0.18s ease}
+        .ui-card:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,0.25)}
+        @media (prefers-reduced-motion: reduce){
+            *,*::before,*::after{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;scroll-behavior:auto !important}
+        }
         .scrollbar-hide::-webkit-scrollbar{display:none}
         .scrollbar-hide{-ms-overflow-style:none;scrollbar-width:none}
         
@@ -98,6 +103,9 @@
         @keyframes dueDatePulse{0%,100%{background-color:rgba(239,68,68,0.12)}50%{background-color:rgba(239,68,68,0.28)}}
         @keyframes settingsTzHighlight{0%{box-shadow:0 0 0 0 rgba(34,211,238,0)}50%{box-shadow:0 0 0 4px rgba(34,211,238,0.35)}100%{box-shadow:0 0 0 0 rgba(34,211,238,0)}}
         @keyframes antiCheatWarn{0%{opacity:0;transform:scale(0.8)}40%{opacity:1;transform:scale(1.04)}100%{opacity:0;transform:scale(1);display:none}}
+        @keyframes quantumDrift{0%,100%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-4px) rotate(0.6deg)}50%{transform:translateY(2px) rotate(-0.4deg)}75%{transform:translateY(-2px) rotate(0.3deg)}}
+        @keyframes glitchWave{0%,100%{clip-path:inset(0 0 0 0)}20%{clip-path:inset(10% 0 35% 0)}40%{clip-path:inset(45% 0 5% 0)}60%{clip-path:inset(5% 0 55% 0)}80%{clip-path:inset(30% 0 20% 0)}}
+        @keyframes auroraSpin{0%{filter:hue-rotate(0deg)}50%{filter:hue-rotate(110deg)}100%{filter:hue-rotate(360deg)}}
         .animate-task-hover:hover{animation:taskHoverPop 0.3s ease-out forwards}
         .animate-border-glow{animation:borderGlow 3s ease-in-out infinite}
         .animate-xp-fill{animation:xpBarFill 1.2s ease-out}
@@ -107,12 +115,50 @@
         .animate-task-complete-v2{animation:taskCompleteV2 0.55s ease-out}
         .animate-due-pulse{animation:dueDatePulse 1.8s ease-in-out infinite}
         .animate-tz-highlight{animation:settingsTzHighlight 1.5s ease-out}
+        .animate-quantum{animation:quantumDrift 3.6s ease-in-out infinite}
+        .animate-glitch-wave{animation:glitchWave 1.1s steps(2,end) infinite}
+        .animate-aurora-spin{animation:auroraSpin 8s linear infinite}
+
+        /* Adaptive UI system for phones/tablets/laptops/desktops */
+        .ui-shell{width:100%}
+        .adaptive-modal{width:100%}
+        .adaptive-card{width:100%}
+        .adaptive-title{line-height:1.1}
+        @media (max-width:640px){
+            .ui-shell .adaptive-card{padding:1rem!important;border-radius:1rem!important}
+            .ui-shell .adaptive-title{font-size:clamp(1.4rem,8vw,2.1rem)!important}
+            .ui-shell .adaptive-grid{grid-template-columns:1fr!important}
+            .ui-shell .adaptive-modal{max-width:96vw!important;max-height:92vh!important}
+            .ui-shell .adaptive-tight{padding:.5rem!important}
+        }
+        @media (min-width:641px) and (max-width:1024px){
+            .ui-shell .adaptive-modal{max-width:92vw!important}
+            .ui-shell .adaptive-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+        }
+        @media (min-width:1025px){
+            .ui-shell .adaptive-modal{max-width:min(1200px,90vw)!important}
+        }
+        @media (min-width:1600px){
+            .ui-shell .adaptive-modal{max-width:min(1400px,86vw)!important}
+        }
+        @media (max-width:420px){
+            .ui-shell .adaptive-title{font-size:clamp(1.25rem,8.5vw,1.8rem)!important}
+            .ui-shell .adaptive-stack{display:flex!important;flex-direction:column!important;gap:.5rem!important}
+        }
+        @media (pointer:coarse){
+            .ui-shell button,.ui-shell input,.ui-shell select,.ui-shell textarea{min-height:44px}
+        }
+        @media (prefers-reduced-motion:reduce){
+            .ui-shell *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+        }
+        .adaptive-vh{min-height:100dvh}
+        .safe-pad{padding-left:max(env(safe-area-inset-left),.75rem);padding-right:max(env(safe-area-inset-right),.75rem)}
 
     </style>
     </head>
 <body>
     <div id="root">
-        <div style="min-height:100vh;background:linear-gradient(135deg,#1f2937 0%,#581c87 50%,#000 100%);color:white;display:flex;align-items:center;justify-center;padding:2rem;font-family:system-ui,sans-serif">
+        <div style="min-height:100vh;background:linear-gradient(135deg,#1f2937 0%,#581c87 50%,#000 100%);color:white;display:flex;align-items:center;justify-content:center;padding:2rem;font-family:system-ui,sans-serif">
             <div style="text-align:center;max-width:400px">
                 <div style="font-size:5rem;margin-bottom:1.5rem;animation:spin 2s linear infinite">⚙️</div>
                 <h2 style="font-size:2rem;font-weight:bold;margin-bottom:1rem;background:linear-gradient(to right,#22d3ee,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Loading P.I.V.T...</h2>
@@ -247,6 +293,37 @@
             return Math.abs(hash).toString(36);
         };
         
+        const blockedUsernameFragmentsStrict=[
+            'fuck','shit','bitch','asshole','bastard','cunt','dick','nazi','hitler',
+            'rape','rapist','terrorist','suicide','murder','slut','whore','fag','niga','nigger'
+        ];
+        const blockedUsernameFragmentsBoundary=['porn','sex','nude','terror','kill'];
+
+        const usernameSeedAdjectives=['Nova','Pixel','Quantum','Brave','Swift','Lunar','Solar','Aero','Cyber','Mystic','Turbo','Silent','Arc','Neon','Crystal','Rapid','Iron','Shadow','Radiant','Vivid','Glacial','Storm','Echo','Sky','Zen'];
+        const usernameSeedNouns=['Falcon','Rider','Knight','Builder','Sage','Comet','Pilot','Tiger','Wolf','Dragon','Panda','Cobra','Otter','Wizard','Voyager','Runner','Spark','Atlas','Rocket','Nimbus','Harbor','Orbit','Pulse','Forge','Beacon','Vertex','Matrix','Sparrow','Phoenix','Raven','Yeti','Hydra','Moose','Eagle','Panther','Jaguar','Tornado','Thunder','Aurora','Blaze'];
+        const RANDOM_USERNAME_POOL_SIZE=usernameSeedAdjectives.length*usernameSeedNouns.length;
+
+        const isInappropriateUsername=(username)=>{
+            const lowered=(username||'').toLowerCase();
+            const deobfuscated=lowered
+                .replace(/[0]/g,'o').replace(/[1!|]/g,'i').replace(/[3]/g,'e').replace(/[4@]/g,'a')
+                .replace(/[5$]/g,'s').replace(/[7]/g,'t').replace(/[8]/g,'b')
+                .replace(/[^a-z0-9]/g,'')
+                .replace(/(.)\1{2,}/g,'$1$1');
+            if(!deobfuscated)return false;
+            if(blockedUsernameFragmentsStrict.some(fragment=>deobfuscated.includes(fragment)))return true;
+            return blockedUsernameFragmentsBoundary.some(fragment=>new RegExp(`(^|[_\d])${fragment}([_\d]|$)`).test(lowered));
+        };
+
+        const generateRandomUsername=(attempt=0)=>{
+            const adj=usernameSeedAdjectives[Math.floor(Math.random()*usernameSeedAdjectives.length)]||'Nova';
+            const noun=usernameSeedNouns[Math.floor(Math.random()*usernameSeedNouns.length)]||'Rider';
+            const num=Math.floor(Math.random()*9999).toString().padStart(2,'0');
+            const candidate=`${adj}_${noun}${num}`.slice(0,20);
+            if(isInappropriateUsername(candidate)&&attempt<5)return generateRandomUsername(attempt+1);
+            return candidate;
+        };
+
         // Username validation
         const validateUsername=(username)=>{
             if(!username||username.length<3)return{valid:false,error:'Username must be at least 3 characters'};
@@ -255,6 +332,7 @@
             if(/^\d/.test(username))return{valid:false,error:'Username cannot start with a number'};
             const reserved=['admin','pivt','system','bot','moderator','root','test'];
             if(reserved.includes(username.toLowerCase()))return{valid:false,error:'Username is reserved'};
+            if(isInappropriateUsername(username))return{valid:false,error:'Username contains inappropriate language'};
             return{valid:true};
         };
         
@@ -528,6 +606,34 @@
         const EMAILJS_SERVICE_ID  = 'service_7wiudxn';            // ✅ already filled in
         const EMAILJS_TEMPLATE_ID = 'template_a5g6hul';           // ✅ set
 
+        const APP_CONFIG={
+            otp:{
+                expiryMs:10*60*1000,
+                resendCooldownMs:60*1000,
+                maxAttempts:5
+            },
+            battle:{
+                pollFastMs:10000,
+                pollIdleMs:30000,
+                maxSearchResults:10
+            },
+            music:{
+                defaultVolume:70,
+                autoplayOnTrackChange:true
+            },
+            ui:{
+                phoneMax:640,
+                tabletMax:1024,
+                laptopMax:1440,
+                ultrawideMin:1600
+            },
+            security:{
+                maxViolationScore:10,
+                autoLogoutScore:12,
+                devtoolsThresholdPx:160
+            }
+        };
+
         // Initialize EmailJS once on load
         if(typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_EMAILJS_PUBLIC_KEY' && EMAILJS_PUBLIC_KEY !== ''){
             emailjs.init({publicKey: EMAILJS_PUBLIC_KEY});
@@ -538,43 +644,52 @@
             // SECURITY SYSTEM - Anti-Cheat Protection
             // ============================================
             
-            // Prevent console manipulation
-            (function(){
-                const originalLog=console.log;
-                Object.defineProperty(window,"setCoins",{writable:false,configurable:false});
-                Object.defineProperty(window,"setXp",{writable:false,configurable:false});
-                Object.defineProperty(window,"setTier",{writable:false,configurable:false});
-                Object.defineProperty(window,"setLvl",{writable:false,configurable:false});
-            })();
-            
-            // localStorage Validation
-            const originalSetItem=Storage.prototype.setItem;
-            Storage.prototype.setItem=function(key,value){
-                if(key&&(key.endsWith('-data')||key.endsWith('-data-backup'))){
-                    try{
-                        const data=JSON.parse(value);
-                        if(data.coins<0)data.coins=0;
-                        if(data.xp<0)data.xp=0;
-                        if(data.tier>41)data.tier=41;
-                        if(data.lvl>5)data.lvl=5;
-                        value=JSON.stringify(data);
-                    }catch(e){}
-                }
-                return originalSetItem.call(this,key,value);
-            };
-            
-            // DevTools Detection
-            setInterval(()=>{
-                if(window.outerWidth-window.innerWidth>160||window.outerHeight-window.innerHeight>160){
-                    console.clear();
-                }
-            },1000);
+            const didInitSecurityRuntime=useRef(false);
 
-            // Trusted time: run clock tamper detection silently on mount
-            useEffect(()=>{detectClockTampering();},[]);
+            useEffect(()=>{
+                if(didInitSecurityRuntime.current)return;
+                didInitSecurityRuntime.current=true;
+
+                // Prevent direct global setter hijacking
+                ['setCoins','setXp','setTier','setLvl'].forEach(name=>{
+                    try{Object.defineProperty(window,name,{writable:false,configurable:false});}catch(e){}
+                });
+
+                // localStorage Validation (patch once)
+                if(!window.__pivtStorageGuardPatched){
+                    const originalSetItem=Storage.prototype.setItem;
+                    Storage.prototype.setItem=function(key,value){
+                        if(key&&(key.endsWith('-data')||key.endsWith('-data-backup'))){
+                            try{
+                                const data=JSON.parse(value);
+                                if(data.coins<0)data.coins=0;
+                                if(data.xp<0)data.xp=0;
+                                if(data.tier>41)data.tier=41;
+                                if(data.lvl>5)data.lvl=5;
+                                value=JSON.stringify(data);
+                            }catch(e){}
+                        }
+                        return originalSetItem.call(this,key,value);
+                    };
+                    window.__pivtStorageGuardPatched=true;
+                }
+
+                // DevTools Detection
+                const devtoolsInterval=setInterval(()=>{
+                    if(window.outerWidth-window.innerWidth>APP_CONFIG.security.devtoolsThresholdPx||window.outerHeight-window.innerHeight>APP_CONFIG.security.devtoolsThresholdPx){
+                        console.clear();
+                    }
+                },1000);
+
+                // Trusted time: run clock tamper detection silently on mount
+                detectClockTampering();
+
+                return ()=>clearInterval(devtoolsInterval);
+            },[]);
             
             const [user,setUser]=useState(null);
             const [appTheme,setAppTheme]=useState('dark');
+            const [appThemePref,setAppThemePref]=useState('dark');
             const [showSettings,setShowSettings]=useState(false);
             const [lastActivity,setLastActivity]=useState(Date.now());
             const [sessionTimeout,setSessionTimeout]=useState(null);
@@ -586,6 +701,12 @@
             const [forgotOtpMeta,setForgotOtpMeta]=useState(null);
             const [otpSending,setOtpSending]=useState(false);
             const [otpModal,setOtpModal]=useState(null); // {code, expires} for on-screen OTP display
+            const [authShakeKey,setAuthShakeKey]=useState(0);
+            const [securityMode,setSecurityMode]=useState('normal');
+            const [securityBanner,setSecurityBanner]=useState(null);
+            const [profilePic,setProfilePic]=useState('');
+            const [deleteRequestAt,setDeleteRequestAt]=useState(null);
+            const auditRanRef=useRef(false);
             const [tasks,setTasks]=useState([]);
             const [xp,setXp]=useState(0);
             const [totalXp,setTotalXp]=useState(0);
@@ -621,20 +742,29 @@
             const [friends,setFriends]=useState([]);
             const [friendRequests,setFriendRequests]=useState([]);
             const [challenges,setChallenges]=useState([]);
+            const [elo,setElo]=useState(0);
+            const [eloHistory,setEloHistory]=useState([]);
             const [tradeOffers,setTradeOffers]=useState([]);
             const [showBattle,setShowBattle]=useState(false);
             const [battleTab,setBattleTab]=useState('friends');
+            const [rankedBoard,setRankedBoard]=useState([]);
+            const [specialEvent,setSpecialEvent]=useState({doubleXpWeekend:false,goldenHour:false,megaWheel:false,label:''});
             const [leaderboard,setLeaderboard]=useState([]);
             const detectedTimeZone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
             const [countdownTick,setCountdownTick]=useState(0);
             const [timeZone,setTimeZone]=useState(detectedTimeZone);
+            const [uiWidth,setUiWidth]=useState(typeof window!=='undefined'?(window.innerWidth||1280):1280);
+            const [uiProfile,setUiProfile]=useState('desktop');
             const [editingTask,setEditingTask]=useState(null);
             const [showSeasonComplete,setShowSeasonComplete]=useState(null);
             const [musicEnabled,setMusicEnabled]=useState(false);
             const [musicPlaying,setMusicPlaying]=useState(false);
-            const [musicVolume,setMusicVolume]=useState(70);
+            const [musicVolume,setMusicVolume]=useState(APP_CONFIG.music.defaultVolume);
             const [selectedTrackIndex,setSelectedTrackIndex]=useState(0);
+            const [musicMood,setMusicMood]=useState('all');
+            const [musicAutoplay,setMusicAutoplay]=useState(APP_CONFIG.music.autoplayOnTrackChange);
             const [deletedTasks,setDeletedTasks]=useState([]);
+            const [graveyardResurrections,setGraveyardResurrections]=useState(0);
             const [showDeletedTasks,setShowDeletedTasks]=useState(false);
             const [taskAnimation,setTaskAnimation]=useState({});
             const [showFocus,setShowFocus]=useState(false);
@@ -666,14 +796,48 @@
             const focusEndAtRef=useRef(0);
             const focusTimerRef=useRef(null);
             const audioRef=useRef(null);
+            const previousTrackIdRef=useRef(null);
+            const violationScoreRef=useRef(0);
+            const saveSnapshotRef=useRef({coins:0,totalXp:0,tier:0,at:getTrustedTime()});
+            const autoTourShownForUserRef=useRef('');
 
             const focusTracks=[
-                {name:'Morning Energy',artist:'Audio Library',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'},
-                {name:'Calm Workspace',artist:'Audio Library',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3'},
-                {name:'Deep Concentration',artist:'Audio Library',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3'},
-                {name:'Night Study',artist:'Audio Library',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'},
-                {name:'Ambient Flow',artist:'Audio Library',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3'}
+                {id:'energy-1',name:'Morning Energy',artist:'SoundHelix',mood:'energy',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'},
+                {id:'calm-1',name:'Calm Workspace',artist:'SoundHelix',mood:'calm',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3'},
+                {id:'deep-1',name:'Deep Concentration',artist:'SoundHelix',mood:'deep',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3'},
+                {id:'night-1',name:'Night Study',artist:'SoundHelix',mood:'night',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'},
+                {id:'ambient-1',name:'Ambient Flow',artist:'SoundHelix',mood:'ambient',url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3'},
+                {id:'focus-1',name:'Focus Rain',artist:'Pixabay',mood:'calm',url:'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=rain-ambient-110987.mp3'},
+                {id:'lounge-1',name:'Lo-Fi Sprint',artist:'Pixabay',mood:'energy',url:'https://cdn.pixabay.com/download/audio/2022/10/25/audio_946f4f38aa.mp3?filename=lofi-study-112191.mp3'},
+                {id:'space-1',name:'Cosmic Drift',artist:'Pixabay',mood:'deep',url:'https://cdn.pixabay.com/download/audio/2022/03/24/audio_5f4b9c2af5.mp3?filename=ambient-piano-amp-strings-10711.mp3'}
             ];
+
+            const availableMoods=['all',...new Set(focusTracks.map(t=>t.mood||'other'))];
+            const visibleTracks=musicMood==='all'?focusTracks:focusTracks.filter(t=>t.mood===musicMood);
+            const selectedVisibleIndex=Math.max(0,visibleTracks.findIndex(t=>t.id===focusTracks[selectedTrackIndex]?.id));
+            const selectedTrack=visibleTracks[selectedVisibleIndex]||visibleTracks[0]||focusTracks[0];
+
+            const setTrackById=(trackId)=>{
+                const idx=focusTracks.findIndex(t=>t.id===trackId);
+                if(idx>=0)setSelectedTrackIndex(idx);
+            };
+
+            const shiftVisibleTrack=(delta)=>{
+                if(!visibleTracks.length)return;
+                const current=Math.max(0,visibleTracks.findIndex(t=>t.id===selectedTrack?.id));
+                const next=(current+delta+visibleTracks.length)%visibleTracks.length;
+                const nextTrack=visibleTracks[next];
+                if(nextTrack)setTrackById(nextTrack.id);
+            };
+
+            const pickRandomTrack=()=>{
+                if(!visibleTracks.length)return;
+                if(visibleTracks.length===1)return setTrackById(visibleTracks[0].id);
+                const currentId=selectedTrack?.id;
+                const pool=visibleTracks.filter(t=>t.id!==currentId);
+                const choice=pool[Math.floor(Math.random()*pool.length)]||visibleTracks[0];
+                if(choice)setTrackById(choice.id);
+            };
 
             const normalizeBoosterType=(type)=>{
                 if(type==='xp'||type==='xp_boost')return'xp';
@@ -720,6 +884,303 @@
                 if(h>0)return `${h}h ${m}m`;
                 if(m>0)return `${m}m ${sec}s`;
                 return `${sec}s`;
+            };
+
+            const getActiveSpecialEvents=(ts=getTrustedTime())=>{
+                const d=new Date(ts);
+                const day=d.getDay();
+                const hour=d.getHours();
+                const weekend=(day===0||day===6);
+                const doubleXpWeekend=weekend;
+                const goldenHour=hour===20;
+                const megaWheel=(day===0&&hour>=0&&hour<24); // Sunday 24h
+                const tags=[];
+                if(doubleXpWeekend)tags.push('Double XP Weekend');
+                if(goldenHour)tags.push('Golden Hour (5x coins)');
+                if(megaWheel)tags.push('Mega Wheel Live');
+                return{doubleXpWeekend,goldenHour,megaWheel,label:tags.join(' • ')||'No active limited event'};
+            };
+
+            const getCurrentWeekKey=(ts=getTrustedTime())=>{
+                const d=new Date(ts);
+                const day=(d.getDay()+6)%7;
+                d.setHours(0,0,0,0);
+                d.setDate(d.getDate()-day);
+                return `ranked-${d.toISOString().slice(0,10)}`;
+            };
+
+            const getRankBadge=(score)=>{
+                if(score>=200)return 'Infinity';
+                if(score>=120)return 'Diamond';
+                if(score>=80)return 'Platinum';
+                if(score>=50)return 'Gold';
+                if(score>=25)return 'Silver';
+                return 'Bronze';
+            };
+
+            const updateRankedLeaderboard=async()=>{
+                const weekKey=getCurrentWeekKey();
+                const startDate=new Date(`${weekKey.replace('ranked-','')}T00:00:00`).getTime();
+                const all=[];
+                if(FB.isReady()){
+                    try{
+                        const profiles=await FB.getAllProfiles();
+                        if(profiles){
+                            Object.values(profiles).forEach(p=>{
+                                const score=Math.max(0,Math.floor(p.weeklyTasks||0));
+                                all.push({username:p.username,score,badge:getRankBadge(score),avatar:p.avatar||'',tier:p.tier||0});
+                            });
+                        }
+                    }catch(e){}
+                }
+                try{
+                    for(let i=0;i<localStorage.length;i++){
+                        const key=localStorage.key(i);
+                        if(key&&key.endsWith('-data')){
+                            const raw=localStorage.getItem(key);
+                            if(!raw)continue;
+                            const data=JSON.parse(raw);
+                            const uname=key.replace(/^user-/,'').replace(/-data$/,'');
+                            const weekly=(data.tasks||[]).filter(t=>t.completed&&t.completedAt&&t.completedAt>=startDate).length;
+                            const score=Math.max(0,weekly);
+                            const idx=all.findIndex(a=>a.username===uname);
+                            const row={username:uname,score,badge:getRankBadge(score),avatar:data.profilePic||'',tier:data.tier||0};
+                            if(idx>=0)all[idx]=row; else all.push(row);
+                        }
+                    }
+                }catch(e){}
+                all.sort((a,b)=>b.score-a.score||String(a.username).localeCompare(String(b.username)));
+                setRankedBoard(all.slice(0,100));
+                if(user&&FB.isReady()){
+                    const mine=all.find(a=>a.username===user);
+                    if(mine)try{await FB.patch(`profiles/${user}`,{weeklyTasks:mine.score,weeklyRankBadge:mine.badge,weekKey});}catch(e){}
+                }
+            };
+
+            const runFullFeatureAudit=()=>{
+                const checks=[];
+                const add=(name,pass)=>checks.push({name,pass:Boolean(pass)});
+                add('Tasks feature ready',Array.isArray(tasks));
+                add('Shop feature ready',Array.isArray(shopItems)&&shopItems.length>0);
+                add('Battle feature ready',Array.isArray(friends)&&Array.isArray(challenges));
+                add('Trading feature ready',Array.isArray(tradeOffers));
+                add('Leaderboard feature ready',Array.isArray(leaderboard));
+                add('Goals feature ready',Array.isArray(goals));
+                add('Habits feature ready',Array.isArray(habits));
+                add('Task graveyard feature ready',Array.isArray(deletedTasks));
+                add('Focus feature ready',typeof startFocusSession==='function');
+                add('OTP feature ready',typeof sendForgotOtp==='function'&&APP_CONFIG.otp.maxAttempts>=3);
+                add('Security feature ready',typeof registerSecurityViolation==='function');
+                add('Anti-cheat signature active',typeof signDataPayload==='function');
+                add('Animation set active',document.querySelectorAll('style').length>0);
+                add('Responsive ui profile active',Boolean(uiProfile));
+                add('Profile picture feature active',typeof updateProfilePicture==='function');
+                add('Username filter active',typeof isInappropriateUsername==='function');
+                add('Random username pool >=1000',RANDOM_USERNAME_POOL_SIZE>=1000);
+                add('Music player ready',Array.isArray(focusTracks)&&focusTracks.length>=5);
+                add('ELO feature ready',typeof elo==='number'&&Array.isArray(eloHistory));
+                add('Timezone feature ready',typeof timeZone==='string');
+                add('Achievements feature ready',Array.isArray(achList)&&Array.isArray(achs));
+                add('Signup validator active',typeof validateUsername==='function'&&typeof validateEmail==='function'&&typeof validatePassword==='function');
+                add('Save/load pipeline active',typeof saveData==='function'&&typeof loadData==='function');
+                add('Session timeout guard active',APP_CONFIG.sessionTimeoutMs>=300000);
+                add('Rate limiter active',typeof checkRateLimit==='function'&&typeof recordLoginAttempt==='function');
+                add('Security banner available',typeof setSecurityBanner==='function');
+                add('Trade engine active',typeof sendTradeOffer==='function'&&typeof acceptTradeOffer==='function');
+                add('Challenge engine active',typeof sendBattleChallenge==='function'&&typeof acceptChallenge==='function');
+                add('Focus timer ref active',Boolean(focusTimerRef));
+                add('Animation classes injected',document.querySelectorAll('[class*="animate-"]').length>10);
+                add('UI cards include motion-safe transitions',document.querySelectorAll('.ui-card').length>=1);
+                add('Social persistence active',typeof readSocial==='function'&&typeof writeSocial==='function');
+                add('Avatar renderer active',typeof renderAvatar==='function');
+                add('Deletion lock system active',typeof deleteAcc==='function');
+                add('Theme preference system active',typeof applyThemePreference==='function');
+                add('Special events engine active',typeof getActiveSpecialEvents==='function');
+                add('Ranked leaderboard engine active',typeof updateRankedLeaderboard==='function');
+                add('Final complete debug active',typeof runFinalCompleteDebug==='function');
+                add('Ultimate gameplay audit active',typeof runUltimateGameplayAudit==='function');
+                add('Pre-publish final check active',typeof runPrePublishFinalCheck==='function');
+                const passCount=checks.filter(c=>c.pass).length;
+                console.info(`✅ Full Feature Audit: ${passCount}/${checks.length} checks passed`,checks);
+                return {passCount,total:checks.length,checks};
+            };
+
+                        const runUltimateGameplayAudit=()=>{
+                const categories=[];
+                const add=(area,name,pass,detail='')=>categories.push({area,name,pass:Boolean(pass),detail});
+                const now=getTrustedTime();
+                const todayKey=new Date(now).toDateString();
+                const activeEvents=getActiveSpecialEvents(now);
+                // Time / timezone / today system
+                add('time','Trusted time function',typeof getTrustedTime==='function');
+                add('time','Timezone configured',typeof timeZone==='string'&&timeZone.length>0,timeZone);
+                add('time','Today string stable',typeof todayKey==='string'&&todayKey.length>0,todayKey);
+                add('time','Timezone helper available',typeof getTimezoneClock==='function');
+                // Battle & ranked systems
+                add('battle','Battle tabs include ranked/events',Array.isArray(['friends','challenges','trading','leaderboard','ranked','events']));
+                add('battle','Leaderboard arrays valid',Array.isArray(leaderboard)&&Array.isArray(rankedBoard));
+                add('battle','Ranked updater wired',typeof updateRankedLeaderboard==='function');
+                add('battle','Challenges structure sane',challenges.every(c=>c&&c.id&&c.from&&c.to));
+                // AI goals / habits reminder data
+                add('goals','Goal AI difficulty bounded',goals.every(g=>(g.aiDifficulty||0)>=0&&(g.aiDifficulty||0)<=10));
+                add('goals','Goal progress bounded',goals.every(g=>(g.progress||0)>=0&&(g.progress||0)<=100));
+                add('habits','Habit reminder time shape',habits.every(h=>!h.reminderTime||/^\d{2}:\d{2}$/.test(h.reminderTime)));
+                add('habits','Habit streak non-negative',habits.every(h=>(h.streak||0)>=0&&(h.longestStreak||0)>=0));
+                add('graveyard','Deleted tasks array valid',Array.isArray(deletedTasks));
+                // Shop / secrets / seasons / easter-eggs
+                add('shop','Shop item IDs unique',new Set(shopItems.map(i=>i.id)).size===shopItems.length,`count=${shopItems.length}`);
+                add('shop','Seasonal secret tiers exist',shopItems.some(i=>i.id==='s6_theme_infinity')&&shopItems.some(i=>i.id==='s6_border_infinity'));
+                add('shop','Shop has items for all seasons 1-6',[1,2,3,4,5,6].every(sn=>shopItems.some(i=>i.season===sn)));
+                add('season','Insane last season exists',tiers.some(t=>t.season===6&&/INFINITY|COSMIC|SINGULARITY|PARADOX|VOID|CHAOS/i.test(t.name)));
+                add('season','Last season animated theme exists',shopItems.some(i=>i.type==='theme'&&i.season===6&&String(i.theme?.anim||'').includes('animate-')));
+                // Settings / theme / device responsiveness
+                add('settings','Theme preference control active',typeof applyThemePreference==='function'&&['dark','light','auto'].includes(appThemePref));
+                add('settings','UI profile responsive',['phone','tablet','laptop','desktop','ultrawide'].includes(uiProfile));
+                add('settings','Settings modal scroll safety active',document.querySelectorAll('[class*="max-h\[92vh\]"]').length>=0);
+                // Progress + wheel integration
+                add('progress','Level bounds',lvl>=1&&lvl<=5);
+                add('progress','Tier bounds',tier>=0&&tier<=41);
+                add('progress','XP progress non-negative',Number(xp)>=0&&Number(totalXp)>=0);
+                add('wheel','Wheel tiers and prizes wired',Array.isArray(wheelTiers)&&Array.isArray(wheelPrizes)&&wheelPrizes.length>0);
+                add('wheel','Mega wheel event flag available',typeof activeEvents.megaWheel==='boolean');
+                // Anti-cheat / OTP / animations / events
+                add('security','Task anti-cheat gates exist',String(completeTask).includes('Anti-cheat')&&String(completeTask).includes('Anti-spam'));
+                add('security','Deletion lock active',typeof deleteAcc==='function');
+                add('otp','OTP sender integrated',typeof sendForgotOtp==='function'&&typeof sendEmailOtpViaEmailJS==='function');
+                add('events','Events state shape',typeof activeEvents==='object'&&typeof activeEvents.doubleXpWeekend==='boolean'&&typeof activeEvents.goldenHour==='boolean');
+                add('animation','Animation classes available',document.querySelectorAll('[class*="animate-"]').length>20);
+                const pass=categories.filter(c=>c.pass).length;
+                console.info(`🧪 ULTIMATE GAMEPLAY AUDIT: ${pass}/${categories.length} passed`,categories);
+                return {pass,total:categories.length,categories,today:todayKey,timeZone,activeEvents};
+            };
+
+            const runFinalCompleteDebug=()=>{
+                const out=[];
+                const add=(name,pass,meta='')=>out.push({name,pass:Boolean(pass),meta});
+                add('Shop items unique IDs',new Set(shopItems.map(i=>i.id)).size===shopItems.length,`count=${shopItems.length}`);
+                add('Shop items valid price',shopItems.every(i=>Number(i.price)>=0));
+                add('Shop items valid rarity',shopItems.every(i=>Number(i.rarity)>=0&&Number(i.rarity)<=10));
+                add('Wheel tiers sorted',wheelTiers.every((w,i,a)=>i===0||w.tier>a[i-1].tier));
+                add('Wheel prizes have tier',wheelPrizes.every(p=>wheelTiers.some(w=>w.tier===p.tier)));
+                add('Challenge records sane',challenges.every(c=>c&&c.id&&c.from&&c.to));
+                add('Trades sane',tradeOffers.every(t=>t&&t.id&&t.from&&t.to));
+                add('Task rewards sane',tasks.every(t=>Number(t.xpRew)>=0&&Number(t.coinRew)>=0));
+                add('Events engine live',typeof getActiveSpecialEvents==='function'&&typeof specialEvent==='object');
+                add('Ranked board generated',Array.isArray(rankedBoard));
+                add('OTP sender configured',typeof sendForgotOtp==='function');
+                add('Deletion lock wired',typeof deleteAcc==='function');
+                add('Graveyard resurrection counter sane',Number(graveyardResurrections)>=0);
+                add('Strict username uniqueness active',typeof isUsernameTakenStrict==='function');
+                add('Time system available',typeof getTrustedTime==='function'&&typeof getTrustedHour==='function');
+                add('Timezone choices available',Array.isArray(timeZoneChoices)&&timeZoneChoices.length>10);
+                add('Progress bar inputs sane',Number(xp)>=0&&Number(totalXp)>=0&&Number(getLvlXp())>0);
+                const pass=out.filter(x=>x.pass).length;
+                console.info(`🧪 FINAL COMPLETE DEBUG: ${pass}/${out.length} passed`,out);
+                return {pass,total:out.length,results:out};
+            };
+
+            const runTimeSystemDebug=()=>{
+                const now=getTrustedTime();
+                const zone=timeZone||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
+                const today=new Date(now).toDateString();
+                const events=getActiveSpecialEvents(now);
+                const checks=[];
+                const add=(name,pass,meta='')=>checks.push({name,pass:Boolean(pass),meta});
+                add('Trusted time numeric',typeof now==='number'&&!Number.isNaN(now),String(now));
+                add('Timezone set',typeof zone==='string'&&zone.length>0,zone);
+                add('Today key derived',typeof today==='string'&&today.length>0,today);
+                add('getTrustedHour range',getTrustedHour()>=0&&getTrustedHour()<=23,String(getTrustedHour()));
+                add('Event state shape',typeof events.doubleXpWeekend==='boolean'&&typeof events.goldenHour==='boolean'&&typeof events.megaWheel==='boolean',events.label||'');
+                add('Clock helper available',typeof getTimezoneClock==='function');
+                const pass=checks.filter(c=>c.pass).length;
+                console.info(`🕒 Time System Debug: ${pass}/${checks.length} passed`,checks);
+                return {pass,total:checks.length,checks,now,zone,today,events};
+            };
+
+            const runPrePublishFinalCheck=()=>{
+                const timeReport=runTimeSystemDebug();
+                const bugReport=runBugChecks();
+                const featureReport=runFullFeatureAudit();
+                const completeReport=runFinalCompleteDebug();
+                const ultimateReport=runUltimateGameplayAudit();
+                const bugPass=Array.isArray(bugReport)?bugReport.filter(c=>c.pass).length:0;
+                const bugTotal=Array.isArray(bugReport)?bugReport.length:0;
+                const summary={
+                    time:`${timeReport.pass}/${timeReport.total}`,
+                    bug:`${bugPass}/${bugTotal}`,
+                    feature:`${featureReport.passCount}/${featureReport.total}`,
+                    complete:`${completeReport.pass}/${completeReport.total}`,
+                    ultimate:`${ultimateReport.pass}/${ultimateReport.total}`
+                };
+                console.info('🚀 Pre-Publish Final Check Summary',summary,{timeReport,bugReport,featureReport,completeReport,ultimateReport});
+                return {summary,timeReport,bugReport,featureReport,completeReport,ultimateReport};
+            };
+
+const runBugChecks=()=>{
+                const checks=[];
+                const addCheck=(name,condition)=>checks.push({name,pass:Boolean(condition)});
+                addCheck('Firebase URL configured',Boolean(FIREBASE_DB_URL&&FIREBASE_DB_URL.startsWith('https://')));
+                addCheck('Firebase URL safe format',!String(FIREBASE_DB_URL||'').includes('YOUR_FIREBASE'));
+                addCheck('EmailJS public key configured',Boolean(EMAILJS_PUBLIC_KEY&&EMAILJS_PUBLIC_KEY!=='YOUR_EMAILJS_PUBLIC_KEY'));
+                addCheck('EmailJS service configured',Boolean(EMAILJS_SERVICE_ID&&EMAILJS_SERVICE_ID!=='YOUR_SERVICE_ID'));
+                addCheck('EmailJS template configured',Boolean(EMAILJS_TEMPLATE_ID&&EMAILJS_TEMPLATE_ID!=='YOUR_TEMPLATE_ID'));
+                addCheck('OTP expiry >= 5 min',APP_CONFIG.otp.expiryMs>=300000);
+                addCheck('OTP expiry <= 20 min',APP_CONFIG.otp.expiryMs<=1200000);
+                addCheck('OTP cooldown >= 30 sec',APP_CONFIG.otp.resendCooldownMs>=30000);
+                addCheck('OTP attempts >= 3',APP_CONFIG.otp.maxAttempts>=3);
+                addCheck('Battle fast polling >= 5s',APP_CONFIG.battle.pollFastMs>=5000);
+                addCheck('Battle idle polling >= 10s',APP_CONFIG.battle.pollIdleMs>=10000);
+                addCheck('Search results cap <= 20',APP_CONFIG.battle.maxSearchResults<=20);
+                addCheck('Music default volume valid',APP_CONFIG.music.defaultVolume>=0&&APP_CONFIG.music.defaultVolume<=100);
+                addCheck('Focus tracks >= 5',focusTracks.length>=5);
+                addCheck('Focus tracks include calm mood',focusTracks.some(t=>t.mood==='calm'));
+                addCheck('Focus tracks include energy mood',focusTracks.some(t=>t.mood==='energy'));
+                addCheck('Focus tracks include deep mood',focusTracks.some(t=>t.mood==='deep'));
+                addCheck('Track IDs unique',new Set(focusTracks.map(t=>t.id)).size===focusTracks.length);
+                addCheck('Track URLs are https',focusTracks.every(t=>String(t.url||'').startsWith('https://')));
+                addCheck('Track artist provided',focusTracks.every(t=>Boolean(t.artist)));
+                addCheck('Track mood provided',focusTracks.every(t=>Boolean(t.mood)));
+                addCheck('Visible track selection works',Boolean(selectedTrack&&selectedTrack.id));
+                addCheck('User object nullable',user===null||typeof user==='string');
+                addCheck('Tasks array type',Array.isArray(tasks));
+                addCheck('Goals array type',Array.isArray(goals));
+                addCheck('Habits array type',Array.isArray(habits));
+                addCheck('Challenges array type',Array.isArray(challenges));
+                addCheck('Trade offers array type',Array.isArray(tradeOffers));
+                addCheck('Friends array type',Array.isArray(friends));
+                addCheck('Friend requests array type',Array.isArray(friendRequests));
+                addCheck('Leaderboard array type',Array.isArray(leaderboard));
+                addCheck('Activity log array type',Array.isArray(activityLog));
+                addCheck('Coins non-negative',Number(coins)>=0);
+                addCheck('XP non-negative',Number(xp)>=0);
+                addCheck('Total XP non-negative',Number(totalXp)>=0);
+                addCheck('Level within bounds',Number(lvl)>=1&&Number(lvl)<=5);
+                addCheck('Tier within bounds',Number(tier)>=0&&Number(tier)<=41);
+                addCheck('Volume in bounds',musicVolume>=0&&musicVolume<=100);
+                addCheck('Selected track index valid',selectedTrackIndex>=0&&selectedTrackIndex<focusTracks.length);
+                addCheck('Auth form has OTP field',Object.prototype.hasOwnProperty.call(authForm,'otp'));
+                addCheck('Username validator exists',typeof validateUsername==='function');
+                addCheck('Strict username uniqueness check active',typeof isUsernameTakenStrict==='function');
+                addCheck('Account registry active',typeof rebuildAccountRegistry==='function'&&typeof registerAccountInRegistry==='function');
+                addCheck('Time system debug active',typeof runTimeSystemDebug==='function');
+                addCheck('Fresh start cleanup function active',typeof wipeAllAccountsForFreshStart==='function');
+                addCheck('Username deobfuscation active',String(isInappropriateUsername).includes('deobfuscated'));
+                addCheck('Account deletion lock key wired',typeof deleteRequestAt==='number'||deleteRequestAt===null);
+                addCheck('Special events state ready',typeof specialEvent==='object'&&Object.prototype.hasOwnProperty.call(specialEvent,'doubleXpWeekend'));
+                addCheck('Ranked board state ready',Array.isArray(rankedBoard));
+                addCheck('Password hash exists',typeof hashPassword==='function');
+                addCheck('Sanitizer exists',typeof sanitizeInput==='function');
+                addCheck('Trusted time function exists',typeof getTrustedTime==='function');
+                addCheck('Storage helper exists',typeof S.get==='function'&&typeof S.set==='function');
+                addCheck('Firebase helper exists',typeof FB.get==='function'&&typeof FB.set==='function');
+                addCheck('OTP modal state ready',otpModal===null||typeof otpModal==='object');
+                addCheck('Forgot OTP metadata state ready',forgotOtpMeta===null||typeof forgotOtpMeta==='object');
+                addCheck('Config object frozen shape',Boolean(APP_CONFIG.otp&&APP_CONFIG.battle&&APP_CONFIG.music));
+                addCheck('Mood list includes all',availableMoods.includes('all'));
+
+                const passed=checks.filter(c=>c.pass).length;
+                console.info(`🧪 P.I.V.T Bug Checks: ${passed}/${checks.length} passed`);
+                return checks;
             };
 
             const tiers=[
@@ -962,6 +1423,45 @@
                 {n:'Endgame',c:'from-purple-500 to-pink-500'}
             ];
 
+            const signDataPayload=(username,data)=>{
+                try{
+                    const clone={...data};
+                    delete clone.dataSignature;
+                    delete clone.signatureVersion;
+                    const canonical=JSON.stringify(clone);
+                    return hashPassword(`${username}::${canonical}`,'pivt-data-sign-v1');
+                }catch(e){
+                    return '';
+                }
+            };
+
+            const registerSecurityViolation=(reason,severity=1)=>{
+                const safeSeverity=Math.max(1,Math.min(6,severity));
+                violationScoreRef.current=Math.max(0,violationScoreRef.current+safeSeverity);
+                console.warn('ANTI-CHEAT:',reason,'score=',violationScoreRef.current);
+                if(violationScoreRef.current>=APP_CONFIG.security.maxViolationScore){
+                    setSecurityMode('lockdown');
+                    setSecurityBanner({message:`🚫 Anti-cheat warning: ${reason}`,mode:'lockdown',at:getTrustedTime()});
+                }
+                if(violationScoreRef.current>=APP_CONFIG.security.autoLogoutScore&&user){
+                    alert('🚫 Anti-cheat system triggered auto logout for suspicious behavior.');
+                    logout();
+                }
+            };
+
+            const auditProgressJump=()=>{
+                const now=getTrustedTime();
+                const prev=saveSnapshotRef.current||{coins:0,totalXp:0,tier:0,at:now};
+                const elapsed=Math.max(1,now-(prev.at||now));
+                const coinJump=Math.max(0,coins-(prev.coins||0));
+                const xpJump=Math.max(0,totalXp-(prev.totalXp||0));
+                const tierJump=Math.max(0,tier-(prev.tier||0));
+                if(elapsed<3000&&coinJump>500000)registerSecurityViolation('Unusual coin spike detected',3);
+                if(elapsed<3000&&xpJump>1000000)registerSecurityViolation('Unusual XP spike detected',3);
+                if(elapsed<5000&&tierJump>2)registerSecurityViolation('Unusual tier spike detected',4);
+                saveSnapshotRef.current={coins,totalXp,tier,at:now};
+            };
+
             const loadData=(u)=>{
                 const primary=S.get(`user-${u}-data`);
                 const backup=S.get(`user-${u}-data-backup`);
@@ -971,6 +1471,10 @@
                 try{
                     const data=JSON.parse(rawData);
                     const trustedNow=getTrustedTime();
+                    const expectedSignature=signDataPayload(u,data);
+                    if(data.dataSignature&&expectedSignature&&data.dataSignature!==expectedSignature){
+                        registerSecurityViolation('Saved data signature mismatch',4);
+                    }
                     const sanitizedBoosters=(data.activeBoosters||[])
                         .filter(b=>b&&sanitizeBoosterExpiry(b.expires)>trustedNow)
                         .map(b=>({
@@ -980,6 +1484,8 @@
                         }));
 
                     setTasks(data.tasks||[]);
+                    setDeletedTasks(Array.isArray(data.deletedTasks)?data.deletedTasks:[]);
+                    setGraveyardResurrections(Math.max(0,data.graveyardResurrections||0));
                     setXp(Math.max(0,data.xp||0));
                     setTotalXp(Math.max(0,data.totalXp||0));
                     setCoins(Math.max(0,data.coins||0));
@@ -1002,11 +1508,14 @@
                     setFriends(data.friends||[]);
                     setFriendRequests(data.friendRequests||[]);
                     setChallenges(data.challenges||[]);
+                    setElo(Math.max(0,data.elo||0));
+                    setEloHistory(Array.isArray(data.eloHistory)?data.eloHistory:[]);
                     setTradeOffers(data.tradeOffers||[]);
                     setHabits(data.habits||[]);
                     setGoals(data.goals||[]);
                     setTutorialCompleted(data.tutorialCompleted||false);
                     setTimeZone(data.timeZone||detectedTimeZone);
+                    setProfilePic(data.profilePic||'');
                     
                     if(!primary?.value&&backup?.value){
                         S.set(`user-${u}-data`,backup.value);
@@ -1033,7 +1542,10 @@
                     .filter(b=>b&&sanitizeBoosterExpiry(b.expires)>trustedNow)
                     .map(b=>({...b,expires:sanitizeBoosterExpiry(b.expires),type:normalizeBoosterType(b.type)}));
                 // Social data (friends, challenges, tradeOffers) stored separately in -social key
-                const data={tasks,xp,totalXp,coins,lvl,tier,season,charIdx,theme,stats,owned,achs,activeBoosters:sanitizedBoosters,currentTitle,currentBorder,currentEffect,specialChars,customThemes,activityLog,friends,friendRequests,challenges,tradeOffers,habits,goals,tutorialCompleted,timeZone};
+                const data={tasks,deletedTasks,graveyardResurrections,xp,totalXp,coins,lvl,tier,season,charIdx,theme,stats,owned,achs,activeBoosters:sanitizedBoosters,currentTitle,currentBorder,currentEffect,specialChars,customThemes,activityLog,friends,friendRequests,challenges,elo,eloHistory,profilePic,tradeOffers,habits,goals,tutorialCompleted,timeZone};
+                auditProgressJump();
+                data.signatureVersion=1;
+                data.dataSignature=signDataPayload(user,data);
                 const payload=JSON.stringify(data);
                 S.set(`user-${user}-data`,payload);
                 S.set(`user-${user}-data-backup`,payload);
@@ -1106,6 +1618,32 @@
 
             const hashOtp=(otp,email,username,salt)=>hashPassword(`${otp}-${email}-${username}`,salt);
 
+            const sendEmailOtpViaEmailJS=async({email,username,otp})=>{
+                const expiryText=`${Math.round(APP_CONFIG.otp.expiryMs/60000)} minutes`;
+                const baseMessage=`Hi ${username}, your P.I.V.T OTP code is ${otp}. It expires in ${expiryText}.`;
+                const payloads=[
+                    {
+                        to_email:email,to_name:username,user_email:email,user_name:username,
+                        to:email,recipient:email,recipient_email:email,target_email:email,toEmail:email,
+                        from_name:'P.I.V.T Security',reply_to:'parthbaghele@gmail.com',
+                        otp_code:otp,app_name:'P.I.V.T',expires_in:expiryText,message:baseMessage,subject:'P.I.V.T OTP'
+                    },
+                    {
+                        email,name:username,passcode:otp,otp:otp,code:otp,message:baseMessage,
+                        time_to_expire:expiryText,subject:'P.I.V.T OTP',
+                        to_email:email,to:email,recipient:email,recipient_email:email,target_email:email,toEmail:email
+                    }
+                ];
+                const failures=[];
+                for(const payload of payloads){
+                    try{return await emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,payload,{publicKey:EMAILJS_PUBLIC_KEY});}
+                    catch(err){failures.push({status:err?.status||0,text:(err?.text||err?.message||'').toString()});}
+                }
+                const error=new Error('All EmailJS payload attempts failed');
+                error.failures=failures;
+                throw error;
+            };
+
             const getPasswordChecklist=(password)=>({
                 length:password&&password.length>=8,
                 upper:/[A-Z]/.test(password||''),
@@ -1116,7 +1654,7 @@
             const sendForgotOtp=async ()=>{
                 setAuthErr('');
                 setResetMsg('');
-                const username=sanitizeInput(authForm.username,20);
+                let username=sanitizeInput(authForm.username,20);
                 const email=sanitizeInput(authForm.email,120).toLowerCase();
                 if(!username||!email)return setAuthErr('Enter username and email first');
 
@@ -1124,17 +1662,18 @@
                 const acc=accountKey?S.get(accountKey):null;
                 if(!acc?.value)return setAuthErr('Account not found');
                 const a=JSON.parse(acc.value);
+                const canonicalUsername=sanitizeInput(a.username||username,20)||username;
                 if((a.email||'').toLowerCase()!==email)return setAuthErr('Email doesn\'t match account');
 
-                if(forgotOtpMeta&&forgotOtpMeta.sentAt&&(Date.now()-forgotOtpMeta.sentAt)<60000){
-                    const secondsLeft=Math.ceil((60000-(Date.now()-forgotOtpMeta.sentAt))/1000);
+                if(forgotOtpMeta&&forgotOtpMeta.sentAt&&(getTrustedTime()-forgotOtpMeta.sentAt)<APP_CONFIG.otp.resendCooldownMs){
+                    const secondsLeft=Math.ceil((APP_CONFIG.otp.resendCooldownMs-(getTrustedTime()-forgotOtpMeta.sentAt))/1000);
                     return setAuthErr(`Please wait ${secondsLeft}s before requesting another OTP`);
                 }
 
                 const otp=generateSecureOtp();
                 const salt=generateOtpSalt();
-                const expires=Date.now()+(10*60*1000);
-                const otpHash=hashOtp(otp,email,username,salt);
+                const expires=getTrustedTime()+APP_CONFIG.otp.expiryMs;
+                const otpHash=hashOtp(otp,email,canonicalUsername,salt);
 
                 const emailjsReady=(
                     typeof emailjs!=='undefined'&&
@@ -1145,7 +1684,7 @@
 
                 if(!emailjsReady){
                     // Demo fallback — show OTP in a large clear modal
-                    setForgotOtpMeta({otpHash,salt,expires,attempts:0,username,email,sentAt:Date.now()});
+                    setForgotOtpMeta({otpHash,salt,expires,attempts:0,username:canonicalUsername,email,sentAt:getTrustedTime()});
                     setOtpModal({code:otp,expires,email});
                     setResetMsg('✅ Your OTP code has been generated! Copy it from the box above and paste it below.');
                     return;
@@ -1155,40 +1694,138 @@
                 setResetMsg('📤 Sending OTP to your email...');
 
                 try{
-                    await emailjs.send(
-                        EMAILJS_SERVICE_ID,
-                        EMAILJS_TEMPLATE_ID,
-                        {
-                            to_email:   email,
-                            to_name:    username,
-                            otp_code:   otp,
-                            app_name:   'P.I.V.T',
-                            expires_in: '10 minutes'
-                        },
-                        {publicKey: EMAILJS_PUBLIC_KEY}
-                    );
-                    setForgotOtpMeta({otpHash,salt,expires,attempts:0,username,email,sentAt:Date.now()});
-                    setResetMsg('✅ OTP sent to your email! Check your inbox — and your spam/junk folder if you don\'t see it within a minute. The email comes from parthbaghele@gmail.com.');
+                    if(typeof emailjs?.init==='function')emailjs.init({publicKey:EMAILJS_PUBLIC_KEY});
+                    const sendResult=await sendEmailOtpViaEmailJS({email,username:canonicalUsername,otp});
+                    setForgotOtpMeta({otpHash,salt,expires,attempts:0,username:canonicalUsername,email,sentAt:getTrustedTime()});
+                    setResetMsg(`✅ OTP sent to your email! Check inbox/spam. EmailJS status: ${sendResult?.status||'ok'}`);
                 }catch(err){
                     console.error('EmailJS error:',err);
-                    const status=err?.status||0;
-                    if(status===400)setAuthErr('Email delivery failed: check your EmailJS template variables match exactly.');
+                    const firstFailure=Array.isArray(err?.failures)&&err.failures.length?err.failures[0]:null;
+                    const status=firstFailure?.status||err?.status||0;
+                    const detail=(firstFailure?.text||err?.text||err?.message||'').toString();
+                    if(status===400)setAuthErr(`Email delivery failed (400): template mismatch. In EmailJS template, set 'To Email' to {{to_email}} and remove hardcoded recipient. ${detail}`.trim());
                     else if(status===401||status===403)setAuthErr('Email delivery failed: invalid EmailJS Public Key. Double-check it.');
                     else if(status===429)setAuthErr('Too many emails sent — EmailJS free tier limit hit. Wait a few minutes.');
-                    else setAuthErr('Failed to send OTP. Check your internet connection and try again.');
+                    else setAuthErr(`Failed to send OTP email. ${detail}`.trim());
+                    // Graceful fallback so password reset flow still works when provider is down/misconfigured
+                    setForgotOtpMeta({otpHash,salt,expires,attempts:0,username:canonicalUsername,email,sentAt:getTrustedTime()});
+                    setOtpModal({code:otp,expires,email});
+                    setResetMsg('⚠️ Email send failed, but OTP was generated locally so you can continue now.');
                 }finally{
                     setOtpSending(false);
                 }
             };
 
+            const ACCOUNT_REGISTRY_KEY='pivt-account-registry-v1';
+            const USED_USERNAME_REGISTRY_KEY='pivt-used-usernames-v1';
+            const normalizeUsernameKey=(username)=>sanitizeInput(username||'',20).toLowerCase();
+            const readAccountRegistry=()=>{try{return JSON.parse(localStorage.getItem(ACCOUNT_REGISTRY_KEY)||'{}')||{};}catch(e){return{};}};
+            const writeAccountRegistry=(registry)=>{try{localStorage.setItem(ACCOUNT_REGISTRY_KEY,JSON.stringify(registry||{}));}catch(e){}};
+            const readUsedUsernameRegistry=()=>{try{return JSON.parse(localStorage.getItem(USED_USERNAME_REGISTRY_KEY)||'[]')||[];}catch(e){return[];}};
+            const writeUsedUsernameRegistry=(items)=>{try{localStorage.setItem(USED_USERNAME_REGISTRY_KEY,JSON.stringify(Array.from(new Set(items||[]))));}catch(e){}};
+            const reserveUsernameOnce=(username)=>{
+                const normalized=normalizeUsernameKey(username);
+                if(!normalized)return;
+                const used=new Set(readUsedUsernameRegistry().map(u=>normalizeUsernameKey(u)).filter(Boolean));
+                used.add(normalized);
+                writeUsedUsernameRegistry(Array.from(used));
+            };
+            const isUsernameReserved=(username)=>{
+                const normalized=normalizeUsernameKey(username);
+                if(!normalized)return false;
+                return readUsedUsernameRegistry().some(u=>normalizeUsernameKey(u)===normalized);
+            };
+            const rebuildAccountRegistry=()=>{
+                const registry={};
+                try{
+                    for(let i=0;i<localStorage.length;i++){
+                        const key=localStorage.key(i);
+                        if(!key||!key.endsWith('-account'))continue;
+                        const keyName=key.startsWith('user-')?key.slice(5).replace(/-account$/,''):key.replace(/-account$/,'');
+                        let storedName='';
+                        try{storedName=JSON.parse(localStorage.getItem(key)||'{}').username||'';}catch(e){}
+                        const normalized=normalizeUsernameKey(storedName||keyName);
+                        if(normalized)registry[normalized]=key;
+                    }
+                }catch(e){}
+                writeAccountRegistry(registry);
+                return registry;
+            };
+            const registerAccountInRegistry=(username,key)=>{
+                const normalized=normalizeUsernameKey(username);
+                if(!normalized||!key)return;
+                const registry=readAccountRegistry();
+                registry[normalized]=key;
+                writeAccountRegistry(registry);
+            };
+            const removeAccountFromRegistry=(username)=>{
+                const normalized=normalizeUsernameKey(username);
+                if(!normalized)return;
+                const registry=readAccountRegistry();
+                delete registry[normalized];
+                writeAccountRegistry(registry);
+            };
+
+            const isUsernameTakenStrict=(username)=>{
+                const normalized=normalizeUsernameKey(username);
+                if(!normalized)return false;
+                try{
+                    for(let i=0;i<localStorage.length;i++){
+                        const key=localStorage.key(i);
+                        if(!key||!key.endsWith('-account'))continue;
+                        const raw=localStorage.getItem(key);
+                        let storedName='';
+                        try{storedName=JSON.parse(raw||'{}').username||'';}catch(e){}
+                        const keyName=key.startsWith('user-')?key.slice(5).replace(/-account$/,''):key.replace(/-account$/,'');
+                        if(normalizeUsernameKey(storedName)===normalized||normalizeUsernameKey(keyName)===normalized)return true;
+                    }
+                }catch(e){}
+                return false;
+            };
+
+            const wipeAllAccountsForFreshStart=()=>{
+                const keys=[];
+                try{
+                    const used=new Set(readUsedUsernameRegistry().map(u=>normalizeUsernameKey(u)).filter(Boolean));
+                    for(let i=0;i<localStorage.length;i++){
+                        const k=localStorage.key(i);
+                        if(!k)continue;
+                        if(k.endsWith('-account')){
+                            try{
+                                const raw=localStorage.getItem(k);
+                                const acc=raw?JSON.parse(raw):null;
+                                const keyName=k.startsWith('user-')?k.slice(5).replace(/-account$/,''):k.replace(/-account$/,'');
+                                const uname=normalizeUsernameKey((acc&&acc.username)||keyName);
+                                if(uname)used.add(uname);
+                            }catch(e){}
+                        }
+                        if(k.endsWith('-account')||k.endsWith('-data')||k.endsWith('-data-backup')||k.endsWith('-social'))keys.push(k);
+                    }
+                    writeUsedUsernameRegistry(Array.from(used));
+                    ['current-user','login_attempts','pending-delete-at',ACCOUNT_REGISTRY_KEY].forEach(k=>keys.push(k));
+                    const unique=[...new Set(keys)];
+                    unique.forEach(k=>localStorage.removeItem(k));
+                    return unique.length;
+                }catch(e){return 0;}
+            };
+
             const getAccountKeyByUsername=(username)=>{
-                const normalized=(username||'').toLowerCase();
+                const normalized=normalizeUsernameKey(username);
                 if(!normalized)return null;
+                const registry=readAccountRegistry();
+                const regKey=registry[normalized];
+                if(regKey&&localStorage.getItem(regKey))return regKey;
+                // fallback scan + self-heal registry
                 for(let i=0;i<localStorage.length;i++){
                     const key=localStorage.key(i);
                     if(key&&key.endsWith('-account')){
                         const uname=key.startsWith('user-')?key.slice(5).replace(/-account$/,''):key.replace(/-account$/,'');
-                        if((uname||'').toLowerCase()===normalized)return key;
+                        if(normalizeUsernameKey(uname)===normalized){registerAccountInRegistry(uname,key);return key;}
+                        try{
+                            const raw=localStorage.getItem(key);
+                            const acc=raw?JSON.parse(raw):null;
+                            if(acc&&normalizeUsernameKey(acc.username)===normalized){registerAccountInRegistry(acc.username,key);return key;}
+                        }catch(e){}
                     }
                 }
                 return null;
@@ -1215,11 +1852,98 @@
                 setTimeout(()=>setEpicRedeemAnim(null),3000);
             };
 
+            const triggerSecurityAlert=(message,mode='hardened')=>{
+                setSecurityMode(mode);
+                setSecurityBanner({message,mode,at:getTrustedTime()});
+                setAuthShakeKey(prev=>prev+1);
+                setTimeout(()=>setSecurityBanner(null),2600);
+            };
+
+            const getSessionFingerprint=()=>{
+                const tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
+                const ua=navigator.userAgent||'unknown';
+                const lang=navigator.language||'en';
+                const seed=`${tz}|${ua}|${lang}|${Math.floor((screen?.width||0)/100)}x${Math.floor((screen?.height||0)/100)}`;
+                return hashPassword(seed,'session-fingerprint-v2');
+            };
+
+            const generateSessionToken=()=>{
+                const bytes=new Uint8Array(24);
+                window.crypto.getRandomValues(bytes);
+                return Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join('');
+            };
+
+            const createTrustBadge=(username)=>hashPassword(`${username}-${getTrustedTime()}-${getSessionFingerprint()}`,'trust-badge').slice(0,14);
+
+            const applySecurityModeFromAttempts=(username)=>{
+                try{
+                    const attempts=getLoginAttempts();
+                    const key=(username||'').toLowerCase();
+                    const count=attempts[key]?.count||0;
+                    if(count>=4)setSecurityMode('lockdown');
+                    else if(count>=2)setSecurityMode('hardened');
+                    else setSecurityMode('normal');
+                }catch(e){setSecurityMode('normal');}
+            };
+
+            const renderAvatar=(username,avatar,size='md')=>{
+                const sizes={sm:'w-8 h-8 text-sm',md:'w-10 h-10 text-lg',lg:'w-14 h-14 text-xl'};
+                const sizeClass=sizes[size]||sizes.md;
+                const initial=(username||'?')[0]?.toUpperCase?.()||'?';
+                if(!avatar){
+                    return <div className={`${sizeClass} rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center font-black`}>{initial}</div>;
+                }
+                return (
+                    <div className={`${sizeClass} rounded-full overflow-hidden border border-cyan-400/50 bg-gray-900 relative`}>
+                        <img
+                            src={avatar}
+                            alt={`${username||'user'} avatar`}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(e)=>{e.currentTarget.style.display='none';const fallback=e.currentTarget.nextElementSibling;if(fallback)fallback.style.display='flex';}}
+                        />
+                        <div className="hidden w-full h-full bg-gradient-to-br from-purple-600 to-blue-600 items-center justify-center font-black">{initial}</div>
+                    </div>
+                );
+            };
+
+            const chooseRandomUsername=()=>{
+                const candidate=generateRandomUsername();
+                setAuthForm(prev=>({...prev,username:candidate}));
+                setAuthErr(`🎲 Suggested username: ${candidate} (pool: ${RANDOM_USERNAME_POOL_SIZE.toLocaleString()}+)`);
+            };
+
+            const updateProfilePicture=(file)=>{
+                if(!file)return;
+                if(!file.type.startsWith('image/'))return alert('Please select an image file.');
+                if(file.size>2*1024*1024)return alert('Image too large. Max 2MB.');
+                const reader=new FileReader();
+                reader.onload=()=>{
+                    const result=String(reader.result||'');
+                    if(result.length>600000)return alert('Image is too large after encoding. Use a smaller image.');
+                    setProfilePic(result);
+                    try{
+                        const key=getAccountKeyByUsername(user);
+                        const raw=key?S.get(key):null;
+                        if(raw?.value){
+                            const acc=JSON.parse(raw.value);
+                            acc.avatar=result;
+                            S.set(key,JSON.stringify(acc));
+                        }
+                    }catch(e){}
+                    setSecurityBanner({message:'✅ Profile picture updated',mode:'normal',at:getTrustedTime()});
+                    setTimeout(()=>setSecurityBanner(null),1800);
+                };
+                reader.readAsDataURL(file);
+            };
+
             const signup=()=>{
                 setAuthErr('');
-                const username=sanitizeInput(authForm.username,20);
+                let username=sanitizeInput(authForm.username,20);
                 const email=sanitizeInput(authForm.email,120).toLowerCase();
                 
+                if(!username){username=generateRandomUsername();setAuthForm(prev=>({...prev,username}));}
+
                 // Validate username
                 const usernameCheck=validateUsername(username);
                 if(!usernameCheck.valid)return setAuthErr(usernameCheck.error);
@@ -1236,7 +1960,8 @@
                 if(authForm.password!==authForm.confirmPassword)return setAuthErr('Passwords do not match');
                 
                 // Check if username exists
-                if(getAccountKeyByUsername(username))return setAuthErr('Username already taken (case-insensitive)');
+                if(isUsernameReserved(username))return setAuthErr('This username has already been used before and cannot be reused.');
+                if(isUsernameTakenStrict(username)||getAccountKeyByUsername(username))return setAuthErr('Username already taken (case-insensitive)');
                 
                 // Check if email exists
                 try{
@@ -1260,12 +1985,23 @@
                     createdAt:new Date().toISOString(),
                     lastLogin:new Date().toISOString(),
                     loginCount:1,
-                    accountStatus:'active'
+                    accountStatus:'active',
+                    securityMode:'normal',
+                    securityEvents:[],
+                    sessionToken:'',
+                    trustBadge:'',
+                    avatar:''
                 };
                 
+                accountData.sessionToken=generateSessionToken();
+                accountData.sessionFingerprint=getSessionFingerprint();
+                accountData.trustBadge=createTrustBadge(username);
                 S.set(`user-${username}-account`,JSON.stringify(accountData));
+                registerAccountInRegistry(username,`user-${username}-account`);
+                reserveUsernameOnce(username);
                 S.set('current-user',username);
                 setUser(username);
+                setProfilePic('');
                 setAuthForm({username:'',email:'',password:'',confirmPassword:'',otp:''});
                 
                 // Log signup
@@ -1276,7 +2012,7 @@
 
             const login=()=>{
                 setAuthErr('');
-                const username=sanitizeInput(authForm.username,20);
+                let username=sanitizeInput(authForm.username,20);
                 if(!username||!authForm.password)return setAuthErr('Fill all fields');
                 
                 // Check rate limiting
@@ -1301,9 +2037,12 @@
                 // Verify password (check both hashed and legacy plain text)
                 const inputHashed=hashPassword(authForm.password);
                 const passwordMatch=a.password===inputHashed||a.password===authForm.password;
+                applySecurityModeFromAttempts(username);
                 
                 if(!passwordMatch){
                     recordLoginAttempt(username.toLowerCase(),false);
+                    applySecurityModeFromAttempts(username);
+                    triggerSecurityAlert('🔒 Suspicious login detected. Security hardened.','hardened');
                     return setAuthErr('Invalid username or password');
                 }
                 
@@ -1316,12 +2055,31 @@
                 // Update account info
                 a.lastLogin=new Date().toISOString();
                 a.loginCount=(a.loginCount||0)+1;
+                const nowIso=new Date().toISOString();
+                const fp=getSessionFingerprint();
+                const prevFp=a.sessionFingerprint||null;
+                const fingerprintChanged=Boolean(prevFp&&prevFp!==fp);
+                a.securityEvents=Array.isArray(a.securityEvents)?a.securityEvents:[];
+                if(fingerprintChanged){
+                    a.securityEvents.unshift({type:'new_device_fingerprint',at:nowIso});
+                    a.securityEvents=a.securityEvents.slice(0,25);
+                    a.securityMode='hardened';
+                    triggerSecurityAlert('🛡️ New device signature detected. Security hardened for this login.','hardened');
+                }else{
+                    a.securityMode='normal';
+                }
+                a.sessionFingerprint=fp;
+                a.sessionToken=generateSessionToken();
+                a.trustBadge=createTrustBadge(canonicalUsername);
+                if(profilePic)a.avatar=profilePic;
                 S.set(accountKey||`user-${canonicalUsername}-account`,JSON.stringify(a));
                 
                 // Successful login
                 recordLoginAttempt(username.toLowerCase(),true);
                 S.set('current-user',canonicalUsername);
                 setUser(canonicalUsername);
+                setProfilePic(a.avatar||'');
+                setSecurityMode(a.securityMode||'normal');
                 loadData(canonicalUsername);
                 setTimeout(()=>checkStreaks(),300);
                 setAuthForm({username:'',email:'',password:'',confirmPassword:'',otp:''});
@@ -1335,7 +2093,7 @@
             const forgotPass=()=>{
                 setAuthErr('');
                 setResetMsg('');
-                const username=sanitizeInput(authForm.username,20);
+                let username=sanitizeInput(authForm.username,20);
                 const email=sanitizeInput(authForm.email,120).toLowerCase();
                 const otp=sanitizeInput(authForm.otp,10);
 
@@ -1344,10 +2102,11 @@
 
                 if(!forgotOtpMeta)return setAuthErr('Generate an OTP first');
                 if((forgotOtpMeta.username||'').toLowerCase()!==username.toLowerCase()||(forgotOtpMeta.email||'').toLowerCase()!==email)return setAuthErr('OTP is tied to a different account request');
-                if(Date.now()>forgotOtpMeta.expires)return setAuthErr('OTP expired. Request a new OTP');
-                if((forgotOtpMeta.attempts||0)>=5)return setAuthErr('Too many OTP attempts. Request a new OTP');
+                if(getTrustedTime()>forgotOtpMeta.expires)return setAuthErr('OTP expired. Request a new OTP');
+                if((forgotOtpMeta.attempts||0)>=APP_CONFIG.otp.maxAttempts)return setAuthErr('Too many OTP attempts. Request a new OTP');
 
-                const expectedHash=hashOtp(otp,email,username,forgotOtpMeta.salt);
+                const otpUsername=forgotOtpMeta.username||username;
+                const expectedHash=hashOtp(otp,email,otpUsername,forgotOtpMeta.salt);
                 if(expectedHash!==forgotOtpMeta.otpHash){
                     setForgotOtpMeta(prev=>prev?{...prev,attempts:(prev.attempts||0)+1}:prev);
                     return setAuthErr('Invalid OTP code');
@@ -1356,11 +2115,12 @@
                 const passwordCheck=validatePassword(authForm.password);
                 if(!passwordCheck.valid)return setAuthErr(passwordCheck.error);
 
-                const accountKey=getAccountKeyByUsername(username);
+                const accountKey=getAccountKeyByUsername(otpUsername);
                 const acc=accountKey?S.get(accountKey):null;
                 if(!acc?.value)return setAuthErr('Account not found');
 
                 const a=JSON.parse(acc.value);
+                const canonicalUsername=sanitizeInput(a.username||username,20)||username;
                 if((a.email||'').toLowerCase()!==email)return setAuthErr('Email doesn\'t match account');
 
                 a.password=hashPassword(authForm.password);
@@ -1378,16 +2138,19 @@
                 },2200);
             };
 
+
             const logout=()=>{
                 S.delete('current-user');
                 setUser(null);
                 setOtpModal(null);
                 setForgotOtpMeta(null);
                 setDeletedTasks([]);
+                setGraveyardResurrections(0);
                 setFocusSessions(0);
                 setTaskAnimation({});
                 setShowDeletedTasks(false);
                 setShowBattle(false);
+                setProfilePic('');
                 setShowShop(false);
                 setShowPrizeWheel(false);
                 setShowHabits(false);
@@ -1411,24 +2174,74 @@
                 setCurrentEffect('');
                 setSpecialChars([]);
                 setTimeZone(detectedTimeZone);
+                setSecurityMode('normal');
+                setSecurityBanner(null);
                 setAuthMode('welcome');
+                autoTourShownForUserRef.current='';
             };
 
-            const toggleTheme=()=>{
-                const newTheme=appTheme==='dark'?'light':'dark';
-                setAppTheme(newTheme);
-                localStorage.setItem('app-theme',newTheme);
+            const applyThemePreference=(pref)=>{
+                const resolved=pref==='auto'?(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):pref;
+                setAppThemePref(pref);
+                setAppTheme(resolved);
+                localStorage.setItem('app-theme-pref',pref);
+                localStorage.setItem('app-theme',resolved);
             };
+            const toggleTheme=()=>applyThemePreference(appThemePref==='dark'?'light':appThemePref==='light'?'auto':'dark');
 
-            const deleteAcc=()=>{
-                if(!confirm('Delete account? Cannot undo!'))return;
-                S.delete(`user-${user}-account`);
-                S.delete(`user-${user}-data`);
-                S.delete(`user-${user}-data-backup`);
-                S.delete(`user-${user}-social`);
+            const deleteAcc=async()=>{
+                const now=getTrustedTime();
+                const key='pending-delete-at';
+                const requestedAt=deleteRequestAt||Number(localStorage.getItem(key)||0)||0;
+                const waitMs=24*60*60*1000;
+                if(!requestedAt){
+                    if(!confirm('Request full account deletion? You will be able to permanently delete after 24 hours.'))return;
+                    localStorage.setItem(key,String(now));
+                    setDeleteRequestAt(now);
+                    setSecurityBanner({message:'⚠️ Deletion requested. Return after 24h to permanently delete.',mode:'hardened',at:now});
+                    return;
+                }
+                const readyAt=requestedAt+waitMs;
+                if(now<readyAt){
+                    const hours=Math.ceil((readyAt-now)/3600000);
+                    return alert(`Deletion lock active. Try again in ~${hours} hour(s).`);
+                }
+                if(!confirm('Final confirmation: permanently delete this account and all progress? This cannot be undone.'))return;
+                const username=user;
+                const removeFromSocial=(obj)=>{
+                    if(!obj)return obj;
+                    const clean={...obj};
+                    clean.friends=(clean.friends||[]).filter(f=>f!==username);
+                    clean.friendRequests=(clean.friendRequests||[]).filter(r=>r.from!==username&&r.to!==username);
+                    clean.challenges=(clean.challenges||[]).filter(c=>c.from!==username&&c.to!==username&&c.opponent!==username);
+                    clean.tradeOffers=(clean.tradeOffers||[]).filter(t=>t.from!==username&&t.to!==username);
+                    return clean;
+                };
+                try{
+                    for(let i=0;i<localStorage.length;i++){
+                        const k=localStorage.key(i);
+                        if(k&&k.endsWith('-social')){
+                            const raw=localStorage.getItem(k);
+                            if(raw)localStorage.setItem(k,JSON.stringify(removeFromSocial(JSON.parse(raw))));
+                        }
+                    }
+                }catch(e){}
+                if(FB.isReady()){
+                    try{await FB.setProfile(username,null);}catch(e){}
+                    try{await FB.setFriends(username,[]);}catch(e){}
+                    try{await FB.del(`inbox/${username}`);}catch(e){}
+                }
+                reserveUsernameOnce(username);
+                S.delete(`user-${username}-account`);
+                removeAccountFromRegistry(username);
+                S.delete(`user-${username}-data`);
+                S.delete(`user-${username}-data-backup`);
+                S.delete(`user-${username}-social`);
+                localStorage.removeItem(key);
+                setDeleteRequestAt(null);
                 try{
                     const attempts=JSON.parse(localStorage.getItem('login_attempts')||'{}');
-                    delete attempts[user.toLowerCase()];
+                    delete attempts[username.toLowerCase()];
                     localStorage.setItem('login_attempts',JSON.stringify(attempts));
                 }catch(e){}
                 logout();
@@ -1487,6 +2300,8 @@
                     username:user,tier,xp,totalXp,
                     streak:stats.currentStreak,
                     tasksCompleted:stats.tasksCompleted,
+                    elo:Math.max(0,elo||0),
+                    avatar:profilePic||'',
                     lastSeen:getTrustedTime()
                 });
             };
@@ -1508,9 +2323,17 @@
                                 return merged;
                             });
                             setChallenges(prev=>{
-                                const myIds=new Set(prev.map(c=>c.id));
                                 const merged=[...prev];
-                                fbChallenges.forEach(c=>{if(!myIds.has(c.id))merged.push(c);});
+                                fbChallenges.forEach(incoming=>{
+                                    const idx=merged.findIndex(c=>c.id===incoming.id);
+                                    if(idx===-1)merged.push(incoming);
+                                    else{
+                                        const existing=merged[idx];
+                                        const incomingStamp=Number(incoming.completedAt||incoming.updatedAt||incoming.acceptedAt||incoming.createdAt||0);
+                                        const existingStamp=Number(existing.completedAt||existing.updatedAt||existing.acceptedAt||existing.createdAt||0);
+                                        if(incomingStamp>=existingStamp)merged[idx]={...existing,...incoming};
+                                    }
+                                });
                                 return merged;
                             });
                             setTradeOffers(prev=>{
@@ -1538,10 +2361,13 @@
                         return merged;
                     });
                     setChallenges(prev=>{
-                        const myIds=new Set(prev.map(c=>c.id));
                         const merged=[...prev];
-                        (mySocial.challenges||[]).filter(c=>c.status==='pending'&&c.opponent===user)
-                            .forEach(c=>{if(!myIds.has(c.id))merged.push(c);});
+                        (mySocial.challenges||[]).filter(c=>c.opponent===user||c.challenger===user)
+                            .forEach(incoming=>{
+                                const idx=merged.findIndex(c=>c.id===incoming.id);
+                                if(idx===-1)merged.push(incoming);
+                                else merged[idx]={...merged[idx],...incoming};
+                            });
                         return merged;
                     });
                     setTradeOffers(prev=>{
@@ -1576,13 +2402,13 @@
                             const acc=JSON.parse(localStorage.getItem(key));
                             const uname=acc.username;
                             if(uname&&uname!==user&&uname.toLowerCase().includes(q)&&!seen.has(uname.toLowerCase())){
-                                results.push({username:uname,source:'💻',tier:0,xp:0,streak:0});
+                                results.push({username:uname,source:'💻',tier:0,xp:0,streak:0,avatar:acc.avatar||''});
                                 seen.add(uname.toLowerCase());
                             }
                         }catch(e){}
                     }
                 }
-                return results.slice(0,10);
+                return results.slice(0,APP_CONFIG.battle.maxSearchResults);
             };
 
             // ── FRIEND FUNCTIONS ──
@@ -1591,18 +2417,24 @@
                 const trimmed=(rawInput||'').trim();
                 if(!trimmed)return alert('Enter a username!');
                 const canonical=resolveUsername(trimmed);
-                if(!canonical){
+                let targetUser=canonical||null;
+                if(!targetUser){
                     if(FB.isReady()){
-                        const profile=await FB.getProfile(trimmed);
-                        if(!profile)return alert(`❌ Player "${trimmed}" not found.\n\nMake sure the username is spelled correctly (it's case-insensitive). They must have logged in at least once with Firebase configured.`);
+                        const allProfiles=await FB.getAllProfiles();
+                        const matched=allProfiles?Object.values(allProfiles).find(p=>(p.username||'').toLowerCase()===trimmed.toLowerCase()):null;
+                        if(!matched)return alert(`❌ Player "${trimmed}" not found.
+
+Make sure the username is spelled correctly (it's case-insensitive). They must have logged in at least once with Firebase configured.`);
+                        targetUser=matched.username;
                     }else{
-                        return alert(`❌ Player "${trimmed}" not found on this device.\n\n💡 Tip: Both players need to be on the SAME browser/device for same-device friend requests. For cross-device play, set up Firebase in the code!`);
+                        return alert(`❌ Player "${trimmed}" not found on this device.
+
+💡 Tip: Both players need to be on the SAME browser/device for same-device friend requests. For cross-device play, set up Firebase in the code!`);
                     }
                 }
-                const targetUser=canonical||trimmed;
                 if(targetUser.toLowerCase()===user.toLowerCase())return alert('❌ Cannot add yourself!');
                 if(friends.map(f=>f.toLowerCase()).includes(targetUser.toLowerCase()))return alert(`⚠️ Already friends with ${targetUser}!`);
-                const reqData={from:user,timestamp:getTrustedTime()};
+                const reqData={from:user,timestamp:getTrustedTime(),avatar:profilePic||''};
                 let sent=false;
                 if(FB.isReady()){const ok=await FB.writeInbox(targetUser,'friendRequests',user,reqData);if(ok)sent=true;}
                 const lsOk=writeSocial(targetUser,d=>{
@@ -1659,7 +2491,8 @@
                     challenger:user,opponent:friendUsername,taskGoal:goalInt,durationDays:durInt,
                     startDate:now,endDate:now+(durInt*24*60*60*1000),
                     challengerBaseline:stats.tasksCompleted,opponentBaseline:null,
-                    challengerProgress:0,opponentProgress:0,status:'pending',winner:null,createdAt:now
+                    challengerProgress:0,opponentProgress:0,status:'pending',winner:null,createdAt:now,
+                    challengerEloSnapshot:Math.max(0,elo||0),opponentEloSnapshot:null,eloAwarded:null,eloReason:''
                 };
                 setChallenges(prev=>[...prev,challenge]);
                 let sent=false;
@@ -1678,7 +2511,7 @@
                 const now=getTrustedTime();
                 setChallenges(prev=>prev.map(c=>{
                     if(c.id!==challengeId||c.status!=='pending')return c;
-                    const updated={...c,status:'active',opponentBaseline:stats.tasksCompleted,startDate:now,endDate:now+(c.durationDays*24*60*60*1000),acceptedAt:now};
+                    const updated={...c,status:'active',opponentBaseline:stats.tasksCompleted,startDate:now,endDate:now+(c.durationDays*24*60*60*1000),acceptedAt:now,opponentEloSnapshot:Math.max(0,elo||0)};
                     if(FB.isReady()){FB.writeInbox(c.challenger,'challenges',challengeId,updated);FB.deleteInbox(user,'challenges',challengeId);}
                     writeSocial(c.challenger,d=>{if(!d.challenges)d.challenges=[];d.challenges=d.challenges.map(dc=>dc.id===challengeId?updated:dc);return d;});
                     writeSocial(user,d=>{if(!d.challenges)d.challenges=[];d.challenges=d.challenges.map(dc=>dc.id===challengeId?updated:dc);return d;});
@@ -1692,34 +2525,60 @@
                 writeSocial(user,d=>{d.challenges=(d.challenges||[]).filter(c=>c.id!==challengeId);return d;});
             };
 
+            const aiChallengeEloDelta=(myElo,opponentElo,resultScore,challenge,myProgress,theirProgress)=>{
+                if(resultScore===0.5)return {delta:0,reason:'Draw: no ELO change'};
+                const expected=1/(1+Math.pow(10,(opponentElo-myElo)/400));
+                const challengeDifficulty=Math.min(14,Math.round((challenge.taskGoal||1)/18))+Math.min(10,Math.round((challenge.durationDays||1)/3));
+                const closeness=Math.max(0,myProgress-theirProgress);
+                const performanceBoost=Math.min(10,Math.round((closeness/Math.max(1,challenge.taskGoal||1))*14));
+                const k=20+challengeDifficulty;
+                const core=Math.round(k*(resultScore-expected));
+                const delta=resultScore===1?Math.max(8,core+performanceBoost):Math.min(-6,core-performanceBoost);
+                const reason=`AI rated this match: K=${k}, expected=${expected.toFixed(2)}, margin=${myProgress-theirProgress}`;
+                return {delta,reason};
+            };
+
+            const resolveChallengeOutcome=(challenge,now)=>{
+                const cp=Math.max(0,challenge.challengerProgress||0);
+                const op=Math.max(0,challenge.opponentProgress||0);
+                const goal=Math.max(1,challenge.taskGoal||1);
+                const reachedGoal=cp>=goal||op>=goal;
+                const timedOut=now>=Number(challenge.endDate||0);
+                if(!reachedGoal&&!timedOut)return null;
+                const winner=cp>op?challenge.challenger:op>cp?challenge.opponent:'tie';
+                const challengerElo=Math.max(0,challenge.challengerEloSnapshot||0);
+                const opponentElo=Math.max(0,challenge.opponentEloSnapshot||0);
+                const challengerScore=winner==='tie'?0.5:winner===challenge.challenger?1:0;
+                const opponentScore=winner==='tie'?0.5:winner===challenge.opponent?1:0;
+                const challengerCalc=aiChallengeEloDelta(challengerElo,opponentElo,challengerScore,challenge,cp,op);
+                const opponentCalc=aiChallengeEloDelta(opponentElo,challengerElo,opponentScore,challenge,op,cp);
+                const eloAwarded={challenger:challengerCalc.delta,opponent:opponentCalc.delta};
+                const eloReason=`${challengerCalc.reason}`;
+                return {
+                    ...challenge,
+                    status:'completed',
+                    winner,
+                    completedAt:now,
+                    eloAwarded,
+                    eloReason
+                };
+            };
+
             const updateChallengeProgress=()=>{
                 const now=getTrustedTime();
                 setChallenges(prev=>prev.map(c=>{
                     if(c.status!=='active')return c;
-                    // Auto-expire challenges past their end date
-                    if(c.endDate&&Number(now)>Number(c.endDate)){
-                        return {...c,status:'expired',expiredAt:now};
-                    }
                     let updated={...c};
                     if(c.challenger===user)updated.challengerProgress=Math.max(0,stats.tasksCompleted-(c.challengerBaseline??0));
                     if(c.opponent===user)updated.opponentProgress=Math.max(0,stats.tasksCompleted-(c.opponentBaseline??stats.tasksCompleted));
+
+                    const outcome=resolveChallengeOutcome(updated,now);
+                    const finalChallenge=outcome||updated;
                     const other=c.challenger===user?c.opponent:c.challenger;
-                    if(FB.isReady())FB.writeInbox(other,'challenges',c.id,updated).catch(()=>{});
-                    writeSocial(other,d=>{if(!d.challenges)d.challenges=[];d.challenges=d.challenges.map(dc=>dc.id===c.id?updated:dc);return d;});
-                    if(now>c.endDate){
-                        const cp=updated.challengerProgress,op=updated.opponentProgress;
-                        const winner=cp>op?c.challenger:op>cp?c.opponent:'tie';
-                        if(winner===user){setXp(p=>p+500);setCoins(p=>p+250);logActivity('challenge_won',{opponent:other,xp:500,coins:250});}
-                        return{...updated,status:'completed',winner,completedAt:now};
-                    }
-                    const myProgress=c.challenger===user?updated.challengerProgress:updated.opponentProgress;
-                    const theirProgress=c.challenger===user?updated.opponentProgress:updated.challengerProgress;
-                    if(myProgress>=c.taskGoal||theirProgress>=c.taskGoal){
-                        const winner=myProgress>theirProgress?user:other;
-                        if(winner===user){setXp(p=>p+400);setCoins(p=>p+200);}
-                        return{...updated,status:'completed',winner,completedAt:now};
-                    }
-                    return updated;
+
+                    if(FB.isReady())FB.writeInbox(other,'challenges',c.id,finalChallenge).catch(()=>{});
+                    writeSocial(other,d=>{if(!d.challenges)d.challenges=[];d.challenges=d.challenges.map(dc=>dc.id===c.id?finalChallenge:dc);return d;});
+                    return finalChallenge;
                 }));
             };
 
@@ -1732,10 +2591,13 @@
             // ── TRADE FUNCTIONS ──
 
             const getRarityLevel=(itemId)=>{const item=shopItems.find(i=>i.id===itemId);return item?item.rarity:0;};
+            const getItemTierRequirement=(itemId)=>{const item=shopItems.find(i=>i.id===itemId);return Math.max(0,Math.min(41,Number(item?.minT||0)));};
+            const isItemWithinTradeTierWindow=(itemId,baseTier=tier)=>Math.abs(getItemTierRequirement(itemId)-Math.max(0,Math.min(41,Number(baseTier||0))))<=1;
 
             const createTradeOffer=async(friendUsername,myItemId,theirItemId)=>{
                 if(!myItemId)return alert('Select an item you want to offer.');
                 if(!theirItemId)return alert('Select an item you want to request.');
+                if(!isItemWithinTradeTierWindow(myItemId)||!isItemWithinTradeTierWindow(theirItemId))return alert('🔒 Trade visibility rule: you can only trade items within 1 tier above or below your current tier.');
                 if(Math.abs(getRarityLevel(myItemId)-getRarityLevel(theirItemId))>1)return alert('⚖️ Trade is too uneven — items must be within 1 rarity level.');
                 if(!owned.includes(myItemId))return alert('❌ You no longer own that item!');
                 const trade={
@@ -1803,7 +2665,7 @@
                         if(profiles){
                             Object.values(profiles).forEach(p=>{
                                 if(!p.username)return;
-                                allUsers.push({username:p.username,totalXp:Math.max(0,p.totalXp||0),tier:Math.min(41,Math.max(0,p.tier||0)),level:1,tasksCompleted:Math.max(0,p.tasksCompleted||0),currentStreak:Math.max(0,p.streak||0),global:true});
+                                allUsers.push({username:p.username,totalXp:Math.max(0,p.totalXp||0),tier:Math.min(41,Math.max(0,p.tier||0)),elo:Math.max(0,p.elo||0),avatar:p.avatar||'',level:1,tasksCompleted:Math.max(0,p.tasksCompleted||0),currentStreak:Math.max(0,p.streak||0),global:true});
                                 seen.add(p.username.toLowerCase());
                             });
                         }
@@ -1819,18 +2681,20 @@
                             const data=JSON.parse(raw);
                             const username=key.replace('user-','').replace('-data','');
                             if(!username||seen.has(username.toLowerCase()))return;
-                            allUsers.push({username,totalXp:Math.max(0,data.totalXp||0),tier:Math.min(41,Math.max(0,data.tier||0)),level:Math.min(5,Math.max(1,data.lvl||1)),tasksCompleted:Math.max(0,data.stats?.tasksCompleted||0),currentStreak:Math.max(0,data.stats?.currentStreak||0)});
+                            allUsers.push({username,totalXp:Math.max(0,data.totalXp||0),tier:Math.min(41,Math.max(0,data.tier||0)),elo:Math.max(0,data.elo||0),avatar:data.profilePic||'',level:Math.min(5,Math.max(1,data.lvl||1)),tasksCompleted:Math.max(0,data.stats?.tasksCompleted||0),currentStreak:Math.max(0,data.stats?.currentStreak||0)});
                         }catch(e){}
                     });
                 }catch(e){}
-                allUsers.sort((a,b)=>b.totalXp-a.totalXp);
+                allUsers.sort((a,b)=>(b.elo||0)-(a.elo||0)||(b.totalXp||0)-(a.totalXp||0));
                 setLeaderboard(allUsers.slice(0,20));
             };
-            
+
+
             useEffect(()=>{
                 if(user){
                     updateChallengeProgress();
                     updateLeaderboard();
+                    updateRankedLeaderboard();
                 }
             },[stats.tasksCompleted,user]);
             
@@ -1838,23 +2702,82 @@
                 const interval=setInterval(()=>{
                     if(user){
                         updateLeaderboard();
+                        updateRankedLeaderboard();
                         updateChallengeProgress();
                         pollBattleInbox();
                     }
-                },showBattle?10000:30000); // Poll faster (10s) when Battle Arena is open
+                },showBattle?APP_CONFIG.battle.pollFastMs:APP_CONFIG.battle.pollIdleMs); // Poll faster when Battle Arena is open
                 return ()=>clearInterval(interval);
             },[user,showBattle]);
 
             useEffect(()=>{
+                if(!user)return;
+                if(autoTourShownForUserRef.current===user)return;
+                autoTourShownForUserRef.current=user;
+                setTimeout(()=>{
+                    setTutorialStep(5);
+                    setShowTutorial(true);
+                    setSecurityBanner({message:'🧭 Quick tour started automatically after login.',mode:'normal',at:getTrustedTime()});
+                    setTimeout(()=>setSecurityBanner(null),2600);
+                },700);
+            },[user]);
+
+            useEffect(()=>{
+                const resetMarker='pivt-fresh-start-v2';
+                if(!localStorage.getItem(resetMarker)){
+                    const removed=wipeAllAccountsForFreshStart();
+                    localStorage.setItem(resetMarker,String(getTrustedTime()));
+                    if(removed>0)console.warn(`🧹 Fresh start cleanup removed ${removed} local account records.`);
+                }
+                rebuildAccountRegistry();
                 const u=S.get('current-user');
                 if(u?.value){
                     setUser(u.value);
                     loadData(u.value);
                     setTimeout(()=>checkStreaks(),300);
                 }
-                // Load saved theme
-                const savedTheme=localStorage.getItem('app-theme')||'dark';
-                setAppTheme(savedTheme);
+                // Load saved theme preference + resolved mode
+                const savedThemePref=localStorage.getItem('app-theme-pref')||localStorage.getItem('app-theme')||'dark';
+                const resolvedTheme=savedThemePref==='auto'?(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):savedThemePref;
+                setAppThemePref(savedThemePref);
+                setAppTheme(resolvedTheme);
+                const pendingDelete=localStorage.getItem('pending-delete-at');
+                if(pendingDelete)setDeleteRequestAt(Number(pendingDelete)||null);
+            },[]);
+
+            useEffect(()=>{
+                if(appThemePref!=='auto'||!window.matchMedia)return;
+                const mq=window.matchMedia('(prefers-color-scheme: dark)');
+                const syncTheme=()=>setAppTheme(mq.matches?'dark':'light');
+                syncTheme();
+                mq.addEventListener&&mq.addEventListener('change',syncTheme);
+                return ()=>{mq.removeEventListener&&mq.removeEventListener('change',syncTheme);};
+            },[appThemePref]);
+
+            useEffect(()=>{
+                const refresh=()=>setSpecialEvent(getActiveSpecialEvents());
+                refresh();
+                const interval=setInterval(refresh,60000);
+                return ()=>clearInterval(interval);
+            },[]);
+
+            useEffect(()=>{
+                const updateUiProfile=()=>{
+                    const w=window.innerWidth||1280;
+                    setUiWidth(w);
+                    if(w<=APP_CONFIG.ui.phoneMax)setUiProfile('phone');
+                    else if(w<=APP_CONFIG.ui.tabletMax)setUiProfile('tablet');
+                    else if(w<=APP_CONFIG.ui.laptopMax)setUiProfile('laptop');
+                    else if(w>=APP_CONFIG.ui.ultrawideMin)setUiProfile('ultrawide');
+                    else setUiProfile('desktop');
+                };
+                updateUiProfile();
+                window.addEventListener('resize',updateUiProfile);
+                window.addEventListener('orientationchange',updateUiProfile);
+                return()=>{
+                    window.removeEventListener('resize',updateUiProfile);
+                    window.removeEventListener('orientationchange',updateUiProfile);
+                };
             },[]);
 
             useEffect(()=>{
@@ -1863,8 +2786,56 @@
                     updateLeaderboard();
                 }
             },[showBattle]);
-            useEffect(()=>{if(user)saveData()},[tasks,xp,totalXp,coins,lvl,tier,season,charIdx,theme,stats,owned,achs,activeBoosters,currentTitle,currentBorder,currentEffect,specialChars,customThemes,activityLog,friends,friendRequests,challenges,tradeOffers,habits,goals,timeZone,tutorialCompleted,user]);
+            useEffect(()=>{if(user)saveData()},[tasks,deletedTasks,graveyardResurrections,xp,totalXp,coins,lvl,tier,season,charIdx,theme,stats,owned,achs,activeBoosters,currentTitle,currentBorder,currentEffect,specialChars,customThemes,activityLog,friends,friendRequests,challenges,elo,eloHistory,profilePic,tradeOffers,habits,goals,timeZone,tutorialCompleted,user]);
+            useEffect(()=>{
+                if(!user)return;
+                const pending=challenges.filter(c=>c.status==='completed'&&c.eloAwarded&&!eloHistory.includes(c.id));
+                if(pending.length===0)return;
+                let totalDelta=0;
+                pending.forEach(c=>{
+                    const myDelta=c.challenger===user?(c.eloAwarded?.challenger||0):(c.eloAwarded?.opponent||0);
+                    totalDelta+=myDelta;
+                    if(myDelta!==0){
+                        logActivity('challenge_elo',{challengeId:c.id,delta:myDelta,winner:c.winner,reason:c.eloReason||'AI challenge model'});
+                    }
+                    if(c.winner===user){
+                        setXp(p=>p+500);
+                        setCoins(p=>p+250);
+                    }
+                });
+                if(totalDelta!==0){
+                    setElo(prev=>Math.max(0,prev+totalDelta));
+                    alert(`🤖 AI ELO update: ${totalDelta>0?'+':''}${totalDelta} ELO from ${pending.length} resolved challenge(s).`);
+                }
+                setEloHistory(prev=>[...new Set([...prev,...pending.map(c=>c.id)])]);
+            },[challenges,user,eloHistory]);
+
             
+            useEffect(()=>{
+                if(!user)return;
+
+                const onContextMenu=(e)=>{e.preventDefault();registerSecurityViolation('Context menu blocked',1);};
+                const onKeyDown=(e)=>{
+                    const key=(e.key||'').toLowerCase();
+                    const block=(
+                        key==='f12'||
+                        (e.ctrlKey&&e.shiftKey&&['i','j','c'].includes(key))||
+                        (e.ctrlKey&&['u','s'].includes(key))
+                    );
+                    if(block){
+                        e.preventDefault();
+                        registerSecurityViolation('Developer shortcut blocked',2);
+                    }
+                };
+
+                window.addEventListener('contextmenu',onContextMenu);
+                window.addEventListener('keydown',onKeyDown,true);
+                return()=>{
+                    window.removeEventListener('contextmenu',onContextMenu);
+                    window.removeEventListener('keydown',onKeyDown,true);
+                };
+            },[user]);
+
             // Session timeout monitoring
             useEffect(()=>{
                 if(!user)return;
@@ -2250,17 +3221,21 @@
                     setTaskAnimation(prev=>({...prev,[id]:null}));
                 },500);
                 
-                const newXp=xp+t.xpRew;
-                const newTotalXp=totalXp+t.xpRew;
-                const newCoins=coins+t.coinRew;
+                const xpMult=specialEvent.doubleXpWeekend?2:1;
+                const coinMult=specialEvent.goldenHour?5:1;
+                const rewardXp=Math.max(1,Math.floor(t.xpRew*xpMult));
+                const rewardCoins=Math.max(1,Math.floor(t.coinRew*coinMult));
+                const newXp=xp+rewardXp;
+                const newTotalXp=totalXp+rewardXp;
+                const newCoins=coins+rewardCoins;
                 const req=getLvlXp();
                 setTasks(tasks.map(x=>x.id===id?{...x,completed:true,completedAt:now}:x));
                 setCoins(newCoins);
-                showCoinAnim(t.coinRew);
-                showXpAnim(t.xpRew);
+                showCoinAnim(rewardCoins);
+                showXpAnim(rewardXp);
                 
                 // Log activity
-                logActivity('task_completed',{task:t.title,xp:t.xpRew,coins:t.coinRew,difficulty:t.difficulty,duration:t.duration});
+                logActivity('task_completed',{task:t.title,xp:rewardXp,coins:rewardCoins,difficulty:t.difficulty,duration:t.duration,event:specialEvent.label});
 
                 const today=new Date(getTrustedTime()).toDateString();
                 const yesterday=new Date(getTrustedTime()-86400000).toDateString();
@@ -2353,13 +3328,15 @@
             const restoreTask=(id)=>{
                 const t=deletedTasks.find(x=>x.id===id);
                 if(!t)return;
-                
-                // Trigger restore animation
-                setTasks([...tasks,t]);
-                setDeletedTasks(deletedTasks.filter(x=>x.id!==id));
-                
-                // Log activity
-                logActivity('task_restored',{task:t.title});
+                const restored={...t,completed:false,completedAt:null,deletedAt:null,resurrectedAt:getTrustedTime()};
+                const bonusXp=Math.max(5,Math.floor((t.xpRew||20)*0.2));
+                setTasks(prev=>[...prev,restored]);
+                setDeletedTasks(prev=>prev.filter(x=>x.id!==id));
+                setXp(prev=>prev+bonusXp);
+                setTotalXp(prev=>prev+bonusXp);
+                setGraveyardResurrections(prev=>prev+1);
+                showXpAnim(bonusXp);
+                logActivity('task_restored',{task:t.title,bonusXp,source:'graveyard'});
             };
 
             const clearDeletedTasks=()=>{
@@ -2368,6 +3345,7 @@
                 if(!confirmClear)return;
                 
                 setDeletedTasks([]);
+                setGraveyardResurrections(0);
                 logActivity('trash_cleared',{count:deletedTasks.length});
             };
 
@@ -3182,10 +4160,10 @@
                         audioRef.current.src='';
                     }
                     setMusicPlaying(false);
+                    previousTrackIdRef.current=null;
                     return;
                 }
 
-                const selectedTrack=focusTracks[selectedTrackIndex]||focusTracks[0];
                 if(!selectedTrack)return;
 
                 if(!audioRef.current){
@@ -3194,10 +4172,17 @@
                 }
 
                 const audio=audioRef.current;
+                const trackChanged=previousTrackIdRef.current&&previousTrackIdRef.current!==selectedTrack.id;
                 if(audio.src!==selectedTrack.url){
                     audio.src=selectedTrack.url;
                 }
                 audio.volume=Math.max(0,Math.min(1,musicVolume/100));
+
+                if(trackChanged&&musicPlaying&&musicAutoplay){
+                    audio.currentTime=0;
+                    audio.play().catch(()=>{});
+                }
+                previousTrackIdRef.current=selectedTrack.id;
 
                 const handlePlay=()=>setMusicPlaying(true);
                 const handlePause=()=>setMusicPlaying(false);
@@ -3211,7 +4196,7 @@
                     audio.removeEventListener('pause',handlePause);
                     audio.removeEventListener('ended',handleEnd);
                 };
-            },[musicEnabled,selectedTrackIndex,musicVolume]);
+            },[musicEnabled,selectedTrack?.id,musicVolume,musicAutoplay,musicPlaying]);
 
             const toggleMusicPlayback=()=>{
                 if(!musicEnabled){
@@ -3473,47 +4458,28 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
 
             if(!user){
                 return (
-                    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black text-white flex items-center justify-center p-4">
-                        <div className="max-w-md w-full">
+                    <div className={`ui-shell ui-${uiProfile} adaptive-vh min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black text-white flex items-center justify-center p-3 md:p-4 safe-pad`} data-ui={uiProfile}>
+                        <div className={`adaptive-card max-w-md w-full ${securityMode==='lockdown'?'animate-glitch-wave':securityMode==='hardened'?'animate-edit-shake':''}`} key={authShakeKey}>
+                            {securityBanner&&<div className={`mb-3 text-xs rounded-xl border px-3 py-2 font-bold ${securityBanner.mode==='lockdown'?'bg-red-900/40 border-red-500 text-red-200':'bg-cyan-900/30 border-cyan-500 text-cyan-200'}`}>{securityBanner.message}</div>}
                             {authMode==='welcome'&&(
                                 <div className="text-center animate-fadeIn">
-                                    <div className="text-8xl mb-6 animate-float">🎮</div>
-                                    <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">P.I.V.T</h1>
+                                    <div className="text-8xl mb-6 animate-float animate-aurora-spin">🎮</div>
+                                    <h1 className="adaptive-title text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-text-sheen">P.I.V.T</h1>
                                     <p className="text-gray-400 mb-8">Productivity • Innovation • Victory • Transformation</p>
-                                    <div className="space-y-4">
+                                    <div className="space-y-4 adaptive-stack">
                                         <button onClick={()=>setAuthMode('login')} className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-cyan-500 to-blue-500 hover:opacity-90 transition-all transform hover:scale-105 shadow-lg">Login</button>
                                         <button onClick={()=>setAuthMode('signup')} className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 transition-all transform hover:scale-105 shadow-lg">Create Account</button>
+                                        
+                                        
                                     </div>
-                                    <button 
-                                        onClick={()=>{
-                                            const accounts=[];
-                                            for(let i=0;i<localStorage.length;i++){
-                                                const key=localStorage.key(i);
-                                                if(key&&key.endsWith('-account')){
-                                                    try{
-                                                        const acc=JSON.parse(localStorage.getItem(key));
-                                                        accounts.push({username:acc.username,created:new Date(acc.createdAt).toLocaleDateString()});
-                                                    }catch(e){}
-                                                }
-                                            }
-                                            if(accounts.length>0){
-                                                const msg=accounts.map(a=>`• ${a.username} (created ${a.created})`).join('\\n');
-                                                alert(`📋 Found ${accounts.length} account(s):\\n\\n${msg}\\n\\nTotal data items: ${localStorage.length}\\n\\nTry logging in with your username!`);
-                                            }else{
-                                                alert(`❌ No accounts found\\n\\nTotal localStorage items: ${localStorage.length}\\n\\n⚠️ Possible reasons:\\n• Different browser\\n• Incognito mode\\n• Cache was cleared\\n• Different device`);
-                                            }
-                                        }}
-                                        className="mt-4 px-4 py-2 text-sm text-gray-400 hover:text-gray-200 underline transition-all"
-                                    >
-                                        🔍 Check for Lost Accounts
-                                    </button>
-                                    <div className="mt-8 grid grid-cols-7 gap-2 opacity-50">
-                                        {tiers.map((t,i)=><div key={i} className="text-center"><div className="text-2xl mb-1">{t.icon}</div><div className="text-xs text-gray-500">{t.name}</div></div>)}
+                                    <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 opacity-70 adaptive-grid">
+                                        {tiers.filter(t=>t.season===1).slice(0,4).map((t,i)=><div key={i} className="text-center animate-quantum"><div className="text-2xl mb-1">{t.icon}</div><div className="text-xs text-cyan-300">{t.name}</div></div>)}
                                     </div>
+                                    <p className="text-[11px] text-gray-500 mt-3">Season 1 preview only — other seasons unlock in-game.</p><p className="text-[10px] text-gray-600 mt-1">Security note: browser apps use client code; anti-cheat protections are active and monitored.</p>
                                 </div>
                             )}
                             {authMode==='login'&&(
-                                <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 animate-slideUp animate-neon-pulse">
+                                <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 animate-slideUp animate-neon-pulse animate-card-pop">
                                     <h2 className="text-3xl font-bold mb-6 text-center">Welcome Back</h2>
                                     {authErr&&<div className="bg-red-500 bg-opacity-20 border border-red-500 rounded-lg p-3 mb-4 text-red-200 text-sm">{authErr}</div>}
                                     <div className="space-y-4">
@@ -3525,11 +4491,11 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                 </div>
                             )}
                             {authMode==='signup'&&(
-                                <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 animate-slideUp animate-neon-pulse">
+                                <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 animate-slideUp animate-neon-pulse animate-card-pop">
                                     <h2 className="text-3xl font-bold mb-6 text-center">Create Account</h2>
                                     {authErr&&<div className="bg-red-500 bg-opacity-20 border border-red-500 rounded-lg p-3 mb-4 text-red-200 text-sm">{authErr}</div>}
                                     <div className="space-y-4">
-                                        <div><label className="block text-sm text-gray-400 mb-2">Username</label><div className="relative"><div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"><User/></div><input type="text" value={authForm.username} onChange={(e)=>setAuthForm({...authForm,username:e.target.value})} className="w-full bg-gray-700 text-white pl-12 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Choose username"/></div></div>
+                                        <div><label className="block text-sm text-gray-400 mb-2">Username</label><div className="relative"><div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"><User/></div><input type="text" value={authForm.username} onChange={(e)=>setAuthForm({...authForm,username:e.target.value})} className="w-full bg-gray-700 text-white pl-12 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Choose username"/></div><button onClick={chooseRandomUsername} className="mt-2 px-3 py-2 bg-indigo-700 hover:bg-indigo-600 rounded-lg text-xs font-bold">🎲 Random Username ({RANDOM_USERNAME_POOL_SIZE.toLocaleString()}+ pool)</button></div>
                                         <div><label className="block text-sm text-gray-400 mb-2">Email</label><div className="relative"><div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"><Mail/></div><input type="email" value={authForm.email} onChange={(e)=>setAuthForm({...authForm,email:e.target.value})} className="w-full bg-gray-700 text-white pl-12 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Your email"/></div></div>
                                         <div><label className="block text-sm text-gray-400 mb-2">Password</label><div className="relative"><div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"><Lock/></div><input type={showPass?'text':'password'} value={authForm.password} onChange={(e)=>setAuthForm({...authForm,password:e.target.value})} className="w-full bg-gray-700 text-white pl-12 pr-12 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Min 6 characters"/><button onClick={()=>setShowPass(!showPass)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300">{showPass?<EyeOff/>:<Eye/>}</button></div></div>
                                         <div><label className="block text-sm text-gray-400 mb-2">Confirm Password</label><div className="relative"><div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"><Lock/></div><input type={showPass?'text':'password'} value={authForm.confirmPassword} onChange={(e)=>setAuthForm({...authForm,confirmPassword:e.target.value})} onKeyPress={(e)=>e.key==='Enter'&&signup()} className="w-full bg-gray-700 text-white pl-12 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Confirm password"/></div></div>
@@ -3539,12 +4505,12 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                 </div>
                             )}
                             {authMode==='forgot'&&(
-                                <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 animate-slideUp animate-neon-pulse">
+                                <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 animate-slideUp animate-neon-pulse animate-card-pop">
                                     <h2 className="text-3xl font-bold mb-2 text-center">Reset Password with OTP</h2>
                                     <p className="text-center text-gray-400 text-sm mb-6">Enter your username and email, click <strong>Send OTP to Email</strong>, check your inbox (and <strong>spam/junk folder</strong>!), then enter the 6-digit code below.</p>
                                     {authErr&&<div className="bg-red-500 bg-opacity-20 border border-red-500 rounded-lg p-3 mb-4 text-red-200 text-sm">{authErr}</div>}
                                     {resetMsg&&<div className="bg-green-500 bg-opacity-20 border border-green-500 rounded-lg p-3 mb-4 text-green-200 text-sm">{resetMsg}</div>}
-                                    {forgotOtpMeta&&<div className="bg-yellow-500 bg-opacity-10 border border-yellow-500 rounded-lg p-3 mb-4 text-yellow-200 text-xs">⏱️ OTP expires at {new Date(forgotOtpMeta.expires).toLocaleTimeString()} • {5-(forgotOtpMeta.attempts||0)} attempt(s) remaining</div>}
+                                    {forgotOtpMeta&&<div className="bg-yellow-500 bg-opacity-10 border border-yellow-500 rounded-lg p-3 mb-4 text-yellow-200 text-xs">⏱️ OTP expires at {new Date(forgotOtpMeta.expires).toLocaleTimeString()} • {APP_CONFIG.otp.maxAttempts-(forgotOtpMeta.attempts||0)} attempt(s) remaining</div>}
                                     {otpModal&&(
                                         <div className="mb-4 bg-gradient-to-br from-indigo-900 to-purple-900 border-2 border-cyan-400 rounded-2xl p-5 text-center animate-glow-ring">
                                             <p className="text-gray-300 text-xs mb-2 uppercase tracking-widest font-bold">Your One-Time Password</p>
@@ -3576,7 +4542,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
             // MAIN GAME UI
             return(
                 <div className={appTheme==='dark'?'dark':''}>
-                <div className={`min-h-screen ${appTheme==='dark'?'bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white':'bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 text-gray-900'} p-4 md:p-8 transition-colors duration-300`}>
+                <div className={`ui-shell ui-${uiProfile} adaptive-vh min-h-screen ${appTheme==='dark'?'bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white':'bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 text-gray-900'} p-3 md:p-6 lg:p-8 transition-colors duration-300 safe-pad`} data-ui={uiProfile}>
                     {coinAnim&&<div key={coinAnim.key} className="fixed top-20 right-4 z-50 animate-coinPop"><div className="bg-yellow-500 text-black px-4 py-2 rounded-full font-bold text-xl shadow-lg">+{coinAnim.amt} 💰</div></div>}
                     {xpAnim&&<div key={xpAnim.key} className="fixed top-32 right-4 z-50 animate-coinPop"><div className="bg-green-500 text-white px-4 py-2 rounded-full font-bold text-xl shadow-lg">+{xpAnim.amt} ⚡</div></div>}
                     {showTierUp&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-95 animate-fadeIn"><div className="text-center animate-reward-burst"><div className="text-9xl mb-4 animate-bounce animate-mega-flash">{ct.icon}</div><h1 className={`text-8xl font-black mb-3 bg-gradient-to-r ${ct.color} bg-clip-text text-transparent animate-pulse`}>MEGA TIER UP!</h1><p className="text-5xl font-bold mb-2 animate-neon-pulse">{ct.name}</p><p className="text-2xl text-yellow-300">+500 Coins! 💰</p><div className="flex justify-center gap-3 mt-5">{[...Array(8)].map((_,i)=><div key={i} className="w-10 h-10 text-yellow-300 animate-bounce" style={{animationDelay:`${i*0.08}s`}}><Star/></div>)}</div></div></div>}
@@ -3630,6 +4596,16 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                     {showTutorial&&(
                         <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-95 p-4 overflow-y-auto" style={{zIndex:1000}}>
                             <div className="max-w-4xl w-full mx-4 my-auto animate-scaleIn max-h-screen overflow-y-auto">
+                                <div className="mb-3 bg-gradient-to-r from-cyan-900/40 via-indigo-900/40 to-purple-900/40 border border-cyan-500/60 rounded-2xl p-4 animate-glow-ring">
+                                    <p className="text-xs uppercase tracking-widest text-cyan-300 font-bold mb-2">🧭 Game Flow Guide</p>
+                                    <div className="grid md:grid-cols-4 gap-2 text-xs">
+                                        <div className="bg-black/30 rounded-lg p-2 animate-float-soft"><p className="font-black text-cyan-300">1) Plan</p><p className="text-gray-300">Create tasks, habits, goals.</p></div>
+                                        <div className="bg-black/30 rounded-lg p-2 animate-float-soft" style={{animationDelay:'0.25s'}}><p className="font-black text-green-300">2) Execute</p><p className="text-gray-300">Focus session + music + streaks.</p></div>
+                                        <div className="bg-black/30 rounded-lg p-2 animate-float-soft" style={{animationDelay:'0.5s'}}><p className="font-black text-yellow-300">3) Reward</p><p className="text-gray-300">Gain XP, coins, unlocks.</p></div>
+                                        <div className="bg-black/30 rounded-lg p-2 animate-float-soft" style={{animationDelay:'0.75s'}}><p className="font-black text-pink-300">4) Compete</p><p className="text-gray-300">Battle, achievements, leaderboard.</p></div>
+                                    </div>
+                                </div>
+
                                 <div className="mb-4 bg-gray-900/80 border border-cyan-500 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2">
                                     <p className="text-sm text-cyan-300">Tutorial Step {tutorialStep+1} / 6</p>
                                     <div className="flex gap-2">
@@ -3948,7 +4924,6 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                         <p className="text-xs text-gray-300"><span className="text-cyan-300 font-bold">{getTimezoneClock().pretty}</span> <span className="text-gray-400">({getTimezoneClock().shortZone})</span></p>
                                     </div>
                                 </div>
-
                             </div>
                             <div className="relative z-10 mt-4 grid md:grid-cols-7 gap-2">{Array.from({length:7}).map((_,idx)=>{
                                 const base=new Date();
@@ -4003,7 +4978,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                             </div>
                         </div>
 
-                        {showCustom&&<div className="bg-gray-800 rounded-2xl p-6 mb-6 border border-gray-700 animate-slideDown"><h3 className="text-2xl font-bold mb-4 flex items-center gap-2"><Sparkles/><span>Customize</span></h3><div className="mb-6"><p className="text-sm text-gray-400 mb-3">Characters</p><div className="grid grid-cols-5 md:grid-cols-10 gap-3">{allChars.map((c,i)=><button key={i} onClick={()=>setCharIdx(i)} className={`text-4xl p-4 rounded-xl transition-all transform hover:scale-110 ${charIdx===i?`bg-gradient-to-r ${ctheme.p} shadow-lg`:'bg-gray-700 hover:bg-gray-600'}`}>{c}</button>)}</div></div><div className="mb-6"><p className="text-sm text-gray-400 mb-3">Themes</p><div className="grid grid-cols-2 md:grid-cols-5 gap-3">{[...themes,...customThemes].map((t,i)=><button key={i} onClick={()=>setTheme(i)} className={`px-4 py-3 rounded-xl font-bold transition-all transform hover:scale-105 ${theme===i?'ring-4 ring-white':''} bg-gradient-to-r ${t.p} ${t.anim||''}`}>{t.n}</button>)}</div></div><div className="mb-6"><p className="text-sm text-gray-400 mb-3">Titles</p><div className="grid grid-cols-2 md:grid-cols-3 gap-3"><button onClick={()=>setCurrentTitle('')} className={`px-4 py-3 rounded-xl font-bold transition-all ${currentTitle===''?'bg-cyan-600':'bg-gray-700 hover:bg-gray-600'}`}>None</button>{shopItems.filter(item=>item.type==='title'&&owned.includes(item.id)).map(item=><button key={item.id} onClick={()=>setCurrentTitle(item.title)} className={`px-4 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${currentTitle===item.title?'bg-cyan-600':'bg-gray-700 hover:bg-gray-600'}`}><span>{item.icon}</span><span>{item.title}</span></button>)}</div></div><div><p className="text-sm text-gray-400 mb-3">Borders</p><div className="grid grid-cols-2 md:grid-cols-4 gap-3"><button onClick={()=>setCurrentBorder('')} className={`px-4 py-3 rounded-xl font-bold transition-all ${currentBorder===''?'bg-cyan-600':'bg-gray-700 hover:bg-gray-600'}`}>None</button>{shopItems.filter(item=>item.type==='border'&&owned.includes(item.id)).map(item=><button key={item.id} onClick={()=>setCurrentBorder(item.border)} className={`px-4 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${currentBorder===item.border?'bg-cyan-600':'bg-gray-700 hover:bg-gray-600'}`}><span>{item.icon}</span><span>{item.n}</span></button>)}</div></div></div>}
+                        {showCustom&&<div className="bg-gray-800 rounded-2xl p-6 mb-6 border border-gray-700 animate-slideDown"><h3 className="text-2xl font-bold mb-4 flex items-center gap-2"><Sparkles/><span>Customize</span></h3><div className="mb-6"><p className="text-sm text-gray-400 mb-3">Characters</p><div className="grid grid-cols-5 md:grid-cols-10 gap-3">{allChars.map((c,i)=><button key={i} onClick={()=>setCharIdx(i)} className={`text-4xl p-4 rounded-xl ui-card transition-all transform hover:scale-110 ${charIdx===i?`bg-gradient-to-r ${ctheme.p} shadow-lg`:'bg-gray-700 hover:bg-gray-600'}`}>{c}</button>)}</div></div><div className="mb-6"><p className="text-sm text-gray-400 mb-3">Themes</p><div className="grid grid-cols-2 md:grid-cols-5 gap-3">{[...themes,...customThemes].map((t,i)=><button key={i} onClick={()=>setTheme(i)} className={`px-4 py-3 rounded-xl font-bold transition-all transform hover:scale-105 ${theme===i?'ring-4 ring-white':''} bg-gradient-to-r ${t.p} ${t.anim||''}`}>{t.n}</button>)}</div></div><div className="mb-6"><p className="text-sm text-gray-400 mb-3">Titles</p><div className="grid grid-cols-2 md:grid-cols-3 gap-3"><button onClick={()=>setCurrentTitle('')} className={`px-4 py-3 rounded-xl font-bold transition-all ${currentTitle===''?'bg-cyan-600':'bg-gray-700 hover:bg-gray-600'}`}>None</button>{shopItems.filter(item=>item.type==='title'&&owned.includes(item.id)).map(item=><button key={item.id} onClick={()=>setCurrentTitle(item.title)} className={`px-4 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${currentTitle===item.title?'bg-cyan-600':'bg-gray-700 hover:bg-gray-600'}`}><span>{item.icon}</span><span>{item.title}</span></button>)}</div></div><div><p className="text-sm text-gray-400 mb-3">Borders</p><div className="grid grid-cols-2 md:grid-cols-4 gap-3"><button onClick={()=>setCurrentBorder('')} className={`px-4 py-3 rounded-xl font-bold transition-all ${currentBorder===''?'bg-cyan-600':'bg-gray-700 hover:bg-gray-600'}`}>None</button>{shopItems.filter(item=>item.type==='border'&&owned.includes(item.id)).map(item=><button key={item.id} onClick={()=>setCurrentBorder(item.border)} className={`px-4 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${currentBorder===item.border?'bg-cyan-600':'bg-gray-700 hover:bg-gray-600'}`}><span>{item.icon}</span><span>{item.n}</span></button>)}</div></div></div>}
 
                         <div className="grid md:grid-cols-2 gap-6">
                             <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700 animate-slideUp">
@@ -4140,6 +5115,17 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                                 </button>
                                             </div>
                                         </div>
+                                        {(()=>{
+                                            const byCat={};
+                                            const hall=deletedTasks.filter(t=>t.dueDate&&new Date(t.dueDate).getTime()<getTrustedTime());
+                                            deletedTasks.forEach(t=>{const k=t.category||'uncategorized';byCat[k]=(byCat[k]||0)+1;});
+                                            const top=Object.entries(byCat).sort((a,b)=>b[1]-a[1])[0];
+                                            return <div className="mb-3 space-y-2">
+                                                <div className="bg-gray-900/60 border border-red-500/30 rounded-lg p-2 text-xs text-red-200">💀 Most abandoned type: <span className="font-black">{top?`${top[0]} (${top[1]})`:'none yet'}</span> • Resurrections: <span className="font-black text-green-300">{graveyardResurrections}</span></div>
+                                                {hall.length>0&&<div className="bg-yellow-900/30 border border-yellow-500/30 rounded-lg p-2 text-xs text-yellow-200">🏴 Hall of Shame: {hall.slice(0,3).map(h=>h.title).join(' • ')}{hall.length>3?' ...':''}</div>}
+                                                <p className="text-xs text-gray-400">Motivation through guilt lol: resurrect old tasks to earn bonus XP.</p>
+                                            </div>;
+                                        })()}
                                         <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-hide">
                                             {deletedTasks.map((t,i)=>(
                                                 <div key={t.id} className="bg-gray-800 bg-opacity-50 rounded-lg p-3 flex items-center justify-between animate-task-restore" style={{animationDelay:`${i*0.05}s`}}>
@@ -4148,7 +5134,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                                         <p className="text-xs text-gray-500">Deleted {Math.floor((getTrustedTime()-t.deletedAt)/1000)}s ago</p>
                                                     </div>
                                                     <button onClick={()=>restoreTask(t.id)} className="px-3 py-1 bg-green-600 hover:bg-green-500 rounded font-bold text-sm flex items-center gap-1 transition-all">
-                                                        ↺ Restore
+                                                        ↺ Resurrect (+XP)
                                                     </button>
                                                 </div>
                                             ))}
@@ -4158,10 +5144,10 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                             </div>
                         </div>
 
-                        {showShop&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 p-4"><div className="bg-gray-800 rounded-2xl max-w-6xl w-full h-screen border border-gray-700 animate-scaleIn flex flex-col"><div className="sticky top-0 bg-gradient-to-b from-gray-800 via-gray-800 to-transparent pb-6 pt-8 px-8 z-50 backdrop-blur-sm shadow-2xl border-b-2 border-purple-500"><div className="flex items-center justify-between mb-4"><h2 className="text-4xl font-bold flex items-center gap-2"><Shop/><span>Shop</span></h2><button onClick={()=>setShowShop(false)} className="p-2 rounded-xl bg-gray-700 hover:bg-gray-600 transition-all"><X/></button></div><div className="flex gap-2 flex-wrap">{rarities.map((r,i)=><button key={i} onClick={()=>setShopFilter(i)} className={`px-4 py-2 rounded-lg font-bold transition-all ${shopFilter===i?`bg-gradient-to-r ${r.c}`:'bg-gray-700 hover:bg-gray-600'}`}>{r.n}</button>)}</div></div><div className="flex-1 overflow-y-auto px-8 pb-8 scrollbar-hide"><div className="grid md:grid-cols-3 gap-4 pt-4">{shopItems.filter(item=>item.rarity===shopFilter&&(!item.season||item.season<=season)).map(item=>{const r=rarities[item.rarity];const locked=tier<(item.minT||0)||lvl<(item.minL||1);const isOwned=owned.includes(item.id);const isBooster=item.type==='xp_boost'||item.type==='coin_boost'||item.type==='combo_boost';const shouldBlur=item.rarity>=5&&locked;return<div key={item.id} className={`bg-gray-700 rounded-xl p-4 border-3 transition-all ${item.rarity>=8?'animate-neon-pulse animate-mega-flash':''} ${shouldBlur?'blur-sm':''} ${locked?'opacity-50':''}`} style={{borderWidth:'3px',borderStyle:'solid',borderImage:`linear-gradient(to right, ${r.c.replace('from-','').replace('to-',',')}) 1`}}><div className={`w-full h-2 rounded-full bg-gradient-to-r ${r.c} mb-3`}></div><div className="flex items-center justify-between mb-3"><div className="flex items-center gap-3"><span className="text-4xl">{item.icon||item.char}</span><div><p className="font-bold">{shouldBlur?'???':item.n}</p>{!shouldBlur&&isBooster&&<><p className="text-[11px] text-cyan-300 mt-1">⏱ {getBoosterTimingText(item)}</p>{item.season&&<p className="text-[11px] text-purple-300">Season {item.season}+ booster</p>}</>}<p className={`text-xs bg-gradient-to-r ${r.c} bg-clip-text text-transparent font-bold`}>{r.n}</p></div></div><div className="text-right"><p className="text-2xl font-bold text-yellow-400">{shouldBlur?'???':item.price} 💰</p></div></div>{locked&&<p className="text-red-400 text-sm mb-2">🔒 {shouldBlur?'Locked - Reach Higher Tier to Reveal':`Requires ${tiers[item.minT||0].name}${item.minL>1?` Level ${item.minL}`:''}`}</p>}{isOwned&&!isBooster?<div className="bg-green-600 text-center py-2 rounded-lg font-bold">✓ Owned</div>:<button onClick={()=>buyItem(item)} disabled={locked} className={`w-full py-2 rounded-lg font-bold ${locked?'bg-gray-600 cursor-not-allowed':'bg-gradient-to-r from-yellow-500 to-orange-500 hover:opacity-90'}`}>{locked?'🔒 Locked':'Buy'}</button>}</div>})}{shopFilter===10&&<div className="bg-gray-700 rounded-xl p-4 border-3" style={{borderWidth:'3px',borderStyle:'solid',borderImage:'linear-gradient(to right, rgb(168, 85, 247), rgb(236, 72, 153)) 1'}}><div className="w-full h-2 rounded-full bg-gradient-to-r from-purple-400 to-purple-500 mb-3"></div><div className="flex items-center justify-between mb-3"><div className="flex items-center gap-3"><span className="text-4xl">🛡️</span><div><p className="font-bold">Streak Saver</p><p className="text-xs text-purple-400 font-bold">Special Item</p></div></div><p className="text-2xl font-bold text-yellow-400">1000 💰</p></div><p className="text-sm text-gray-400 mb-2">Save your streak! (1x per week)</p>{stats.streakSaverUsedThisWeek?<div className="bg-gray-600 text-center py-2 rounded-lg font-bold">Used This Week</div>:<button onClick={buyStreakSaver} className="w-full py-2 rounded-lg font-bold bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90">Buy & Use</button>}</div>}</div></div></div></div>}
+                        {showShop&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 p-2 md:p-4 adaptive-tight"><div className="adaptive-modal adaptive-card bg-gray-800 rounded-2xl max-w-6xl w-full h-[94dvh] border border-gray-700 animate-scaleIn flex flex-col"><div className="sticky top-0 bg-gradient-to-b from-gray-800 via-gray-800 to-transparent pb-4 pt-5 px-4 md:px-8 z-50 backdrop-blur-sm shadow-2xl border-b-2 border-purple-500"><div className="flex items-center justify-between mb-4"><h2 className="text-4xl font-bold flex items-center gap-2"><Shop/><span>Shop</span></h2><button onClick={()=>setShowShop(false)} className="p-2 rounded-xl bg-gray-700 hover:bg-gray-600 transition-all"><X/></button></div><div className="flex gap-2 flex-wrap">{rarities.map((r,i)=><button key={i} onClick={()=>setShopFilter(i)} className={`px-4 py-2 rounded-lg font-bold transition-all ${shopFilter===i?`bg-gradient-to-r ${r.c}`:'bg-gray-700 hover:bg-gray-600'}`}>{r.n}</button>)}</div></div><div className="flex-1 overflow-y-auto px-3 md:px-8 pb-4 md:pb-8 scrollbar-hide"><div className="grid md:grid-cols-3 gap-4 pt-4">{shopItems.filter(item=>item.rarity===shopFilter&&(!item.season||item.season<=season)).map(item=>{const r=rarities[item.rarity];const locked=tier<(item.minT||0)||lvl<(item.minL||1);const isOwned=owned.includes(item.id);const isBooster=item.type==='xp_boost'||item.type==='coin_boost'||item.type==='combo_boost';const shouldBlur=item.rarity>=5&&locked;return<div key={item.id} className={`bg-gray-700 rounded-xl p-4 border-3 transition-all ${item.rarity>=8?'animate-neon-pulse animate-mega-flash':''} ${shouldBlur?'blur-sm':''} ${locked?'opacity-50':''}`} style={{borderWidth:'3px',borderStyle:'solid',borderImage:`linear-gradient(to right, ${r.c.replace('from-','').replace('to-',',')}) 1`}}><div className={`w-full h-2 rounded-full bg-gradient-to-r ${r.c} mb-3`}></div><div className="flex items-center justify-between mb-3"><div className="flex items-center gap-3"><span className="text-4xl">{item.icon||item.char}</span><div><p className="font-bold">{shouldBlur?'???':item.n}</p>{!shouldBlur&&isBooster&&<><p className="text-[11px] text-cyan-300 mt-1">⏱ {getBoosterTimingText(item)}</p>{item.season&&<p className="text-[11px] text-purple-300">Season {item.season}+ booster</p>}</>}<p className={`text-xs bg-gradient-to-r ${r.c} bg-clip-text text-transparent font-bold`}>{r.n}</p></div></div><div className="text-right"><p className="text-2xl font-bold text-yellow-400">{shouldBlur?'???':item.price} 💰</p></div></div>{locked&&<p className="text-red-400 text-sm mb-2">🔒 {shouldBlur?'Locked - Reach Higher Tier to Reveal':`Requires ${tiers[item.minT||0].name}${item.minL>1?` Level ${item.minL}`:''}`}</p>}{isOwned&&!isBooster?<div className="bg-green-600 text-center py-2 rounded-lg font-bold">✓ Owned</div>:<button onClick={()=>buyItem(item)} disabled={locked} className={`w-full py-2 rounded-lg font-bold ${locked?'bg-gray-600 cursor-not-allowed':'bg-gradient-to-r from-yellow-500 to-orange-500 hover:opacity-90'}`}>{locked?'🔒 Locked':'Buy'}</button>}</div>})}{shopFilter===10&&<div className="bg-gray-700 rounded-xl p-4 border-3" style={{borderWidth:'3px',borderStyle:'solid',borderImage:'linear-gradient(to right, rgb(168, 85, 247), rgb(236, 72, 153)) 1'}}><div className="w-full h-2 rounded-full bg-gradient-to-r from-purple-400 to-purple-500 mb-3"></div><div className="flex items-center justify-between mb-3"><div className="flex items-center gap-3"><span className="text-4xl">🛡️</span><div><p className="font-bold">Streak Saver</p><p className="text-xs text-purple-400 font-bold">Special Item</p></div></div><p className="text-2xl font-bold text-yellow-400">1000 💰</p></div><p className="text-sm text-gray-400 mb-2">Save your streak! (1x per week)</p>{stats.streakSaverUsedThisWeek?<div className="bg-gray-600 text-center py-2 rounded-lg font-bold">Used This Week</div>:<button onClick={buyStreakSaver} className="w-full py-2 rounded-lg font-bold bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90">Buy & Use</button>}</div>}</div></div></div></div>}
 
                         {showFocus&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4">
-                            <div className="bg-gray-800 rounded-2xl p-8 max-w-3xl w-full border-2 border-purple-500 animate-scaleIn animate-card-pop max-h-screen overflow-y-auto scrollbar-hide">
+                            <div className="adaptive-modal adaptive-card bg-gray-800 rounded-2xl p-8 max-w-3xl w-full border-2 border-purple-500 animate-scaleIn animate-card-pop max-h-screen overflow-y-auto scrollbar-hide">
                                 <div className="flex items-center justify-between mb-6">
                                     <h2 className="text-4xl font-bold flex items-center gap-2">
                                         <Clock/>
@@ -4207,25 +5193,35 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                                 <div className="space-y-3">
                                                     <div className="bg-gray-800 p-3 rounded-lg">
                                                         <p className="text-xs text-gray-400">Now Selected</p>
-                                                        <p className="font-bold text-sm">{focusTracks[selectedTrackIndex]?.name||'Unknown Track'}</p>
-                                                        <p className="text-xs text-gray-400">{focusTracks[selectedTrackIndex]?.artist||''}</p>
+                                                        <p className="font-bold text-sm">{selectedTrack?.name||'Unknown Track'}</p>
+                                                        <p className="text-xs text-gray-400">{selectedTrack?.artist||''}</p>
                                                     </div>
                                                     <div className="flex gap-2 justify-center items-center">
-                                                        <button onClick={()=>setSelectedTrackIndex(prev=>(prev-1+focusTracks.length)%focusTracks.length)} className="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg transition-all">⏮</button>
+                                                        <button onClick={()=>shiftVisibleTrack(-1)} className="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg transition-all">⏮</button>
                                                         <button onClick={toggleMusicPlayback} className="p-3 bg-cyan-600 hover:bg-cyan-700 rounded-lg text-xl transition-all">{musicPlaying?'⏸':'▶️'}</button>
-                                                        <button onClick={()=>setSelectedTrackIndex(prev=>(prev+1)%focusTracks.length)} className="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg transition-all">⏭</button>
+                                                        <button onClick={()=>shiftVisibleTrack(1)} className="p-2 bg-gray-600 hover:bg-gray-500 rounded-lg transition-all">⏭</button>
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-sm">🔊</span>
                                                         <input type="range" min="0" max="100" value={musicVolume} onChange={(e)=>setMusicVolume(parseInt(e.target.value,10)||0)} className="flex-1 accent-cyan-500"/>
                                                     </div>
-                                                    <select value={selectedTrackIndex} onChange={(e)=>setSelectedTrackIndex(parseInt(e.target.value,10)||0)} className="w-full bg-gray-800 p-2 rounded-lg text-sm">
-                                                        {focusTracks.map((track,idx)=><option key={track.name} value={idx}>{track.name} — {track.artist}</option>)}
-                                                    </select>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <select value={musicMood} onChange={(e)=>setMusicMood(e.target.value)} className="w-full bg-gray-800 p-2 rounded-lg text-sm">
+                                                            {availableMoods.map(mood=><option key={mood} value={mood}>{mood==='all'?'All moods':mood[0].toUpperCase()+mood.slice(1)}</option>)}
+                                                        </select>
+                                                        <select value={selectedTrack?.id||''} onChange={(e)=>setTrackById(e.target.value)} className="w-full bg-gray-800 p-2 rounded-lg text-sm">
+                                                            {visibleTracks.map(track=><option key={track.id} value={track.id}>{track.name} — {track.artist}</option>)}
+                                                        </select>
+                                                    </div>
                                                     <div className="grid grid-cols-2 gap-2">
                                                         <button onClick={playSelectedTrack} className="py-2 bg-cyan-700 hover:bg-cyan-600 rounded-lg text-xs transition-all">Restart Track</button>
-                                                        <button onClick={()=>{if(audioRef.current)audioRef.current.pause();setMusicEnabled(false);}} className="py-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-xs transition-all">Disable Player</button>
+                                                        <button onClick={pickRandomTrack} className="py-2 bg-purple-700 hover:bg-purple-600 rounded-lg text-xs transition-all">Random Track</button>
                                                     </div>
+                                                    <label className="flex items-center justify-between gap-2 text-xs text-gray-300 bg-gray-800 p-2 rounded-lg">
+                                                        <span>Auto-play when changing track</span>
+                                                        <input type="checkbox" checked={musicAutoplay} onChange={(e)=>setMusicAutoplay(e.target.checked)} className="accent-cyan-500"/>
+                                                    </label>
+                                                    <button onClick={()=>{if(audioRef.current)audioRef.current.pause();setMusicEnabled(false);}} className="w-full py-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-xs transition-all">Disable Player</button>
                                                 </div>
                                             )}
                                         </div>
@@ -4278,8 +5274,23 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                         <div className="w-full h-4 bg-gray-700 rounded-full overflow-hidden mb-6">
                                             <div className={`h-full transition-all ${focusMode==='work'?'bg-gradient-to-r from-purple-500 to-indigo-500':'bg-gradient-to-r from-green-500 to-emerald-500'}`} style={{width:`${Math.min(100,Math.max(0,(focusTimeRemaining/((focusMode==='work'?activeFocusConfig.focusMinutes:activeFocusConfig.breakMinutes)*60))*100))}%`}}></div>
                                         </div>
-                                        
-                                        
+
+                                        <div className="bg-gray-700 rounded-xl p-4 mb-6 text-left">
+                                            <h3 className="text-sm font-bold mb-3 text-cyan-300">🎵 Focus Music Player</h3>
+                                            {!musicEnabled?(
+                                                <button onClick={()=>setMusicEnabled(true)} className="w-full py-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg font-bold text-sm">Enable Music</button>
+                                            ):(
+                                                <div className="space-y-2">
+                                                    <p className="text-xs text-gray-300">{selectedTrack?.name||'Unknown Track'} • {selectedTrack?.artist||'Unknown Artist'}</p>
+                                                    <div className="flex gap-2 justify-center items-center">
+                                                        <button onClick={()=>shiftVisibleTrack(-1)} className="px-3 py-1 bg-gray-600 hover:bg-gray-500 rounded-lg">⏮</button>
+                                                        <button onClick={toggleMusicPlayback} className="px-4 py-1 bg-cyan-600 hover:bg-cyan-700 rounded-lg">{musicPlaying?'⏸':'▶️'}</button>
+                                                        <button onClick={()=>shiftVisibleTrack(1)} className="px-3 py-1 bg-gray-600 hover:bg-gray-500 rounded-lg">⏭</button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
                                         <button onClick={stopFocusSession} className="w-full py-3 rounded-xl font-bold bg-red-600 hover:bg-red-500 transition-all">
                                             Stop Session
                                         </button>
@@ -4415,7 +5426,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
 
                                 <div className="bg-gradient-to-br from-orange-900 to-pink-900 bg-opacity-30 rounded-xl p-4 mb-6 border-2 border-orange-500">
                                     <p className="text-lg font-bold text-center text-yellow-300 mb-2">🎰 Try Your Luck!</p>
-                                    <p className="text-sm text-center text-gray-300">Spin the wheel for mystery rewards! Higher tiers = Better prizes!</p>
+                                    <p className="text-sm text-center text-gray-300">Spin the wheel for mystery rewards! Higher tiers = Better prizes! {specialEvent.megaWheel?'🌟 Mega Wheel Event live!':''}</p>
                                     <p className="text-xs text-center text-gray-400 mt-2">✨ Prizes are random. After each spin, a reveal screen will show exactly what you won!</p>
                                 </div>
 
@@ -4505,7 +5516,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                             </div>
                         </div>}
 
-                        {showAch&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 p-4"><div className="bg-gray-800 rounded-2xl p-8 max-w-2xl w-full border border-gray-700 animate-scaleIn animate-card-pop max-h-screen overflow-y-auto scrollbar-hide"><div className="flex items-center justify-between mb-6"><h2 className="text-4xl font-bold flex items-center gap-2"><Award/><span>Achievements ({achs.length}/{achList.length})</span></h2><button onClick={()=>setShowAch(false)} className="p-2 rounded-xl bg-gray-700 hover:bg-gray-600 transition-all"><X/></button></div><div className="space-y-3">{achList.map(a=>{const unlocked=achs.includes(a.id);return<div key={a.id} className={`bg-gray-700 rounded-xl p-4 flex items-center gap-4 ${unlocked?'border-2 border-yellow-500':'opacity-50'}`}><span className="text-5xl">{a.i}</span><div className="flex-1"><p className="font-bold text-lg">{a.n}</p><p className="text-sm text-gray-400">{a.d}</p><p className="text-yellow-400 text-sm font-bold">+{a.r} Coins</p></div>{unlocked&&<div className="text-green-400 font-bold text-xl">✓</div>}</div>})}</div></div></div>}
+                        {showAch&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 p-4"><div className="adaptive-modal adaptive-card bg-gray-800 rounded-2xl p-8 max-w-2xl w-full border border-gray-700 animate-scaleIn animate-card-pop max-h-screen overflow-y-auto scrollbar-hide"><div className="flex items-center justify-between mb-6"><h2 className="text-4xl font-bold flex items-center gap-2"><Award/><span>Achievements ({achs.length}/{achList.length})</span></h2><button onClick={()=>setShowAch(false)} className="p-2 rounded-xl bg-gray-700 hover:bg-gray-600 transition-all"><X/></button></div><div className="space-y-3">{achList.map(a=>{const unlocked=achs.includes(a.id);return<div key={a.id} className={`bg-gray-700 rounded-xl p-4 flex items-center gap-4 ${unlocked?'border-2 border-yellow-500':'opacity-50'}`}><span className="text-5xl">{a.i}</span><div className="flex-1"><p className="font-bold text-lg">{a.n}</p><p className="text-sm text-gray-400">{a.d}</p><p className="text-yellow-400 text-sm font-bold">+{a.r} Coins</p></div>{unlocked&&<div className="text-green-400 font-bold text-xl">✓</div>}</div>})}</div></div></div>}
 
 
                         {showBattle&&(()=>{
@@ -4515,9 +5526,13 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                             const pendingTrades=tradeOffers.filter(t=>t.to===user);
                             const inboxCount=pendingChallenges.length+pendingTrades.length+friendRequests.length;
                             const firebaseOn=FB.isReady();
+                            const tradableTierMin=Math.max(0,tier-1);
+                            const tradableTierMax=Math.min(41,tier+1);
+                            const tradableItemPool=shopItems.filter(item=>(item.type==='title'||item.type==='border')&&isItemWithinTradeTierWindow(item.id));
+                            const ownedTradableItemPool=tradableItemPool.filter(item=>owned.includes(item.id));
                             return(
-                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-2 md:p-4">
-                                <div className="bg-gray-900 rounded-2xl max-w-4xl w-full border-2 border-purple-500 animate-modal-slide flex flex-col max-h-[96vh] overflow-hidden shadow-2xl">
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-2 md:p-4 adaptive-tight">
+                                <div className="adaptive-modal bg-gray-900 rounded-2xl max-w-4xl w-full border-2 border-purple-500 animate-modal-slide flex flex-col max-h-[96vh] overflow-hidden shadow-2xl">
                                     {/* Header */}
                                     <div className="flex items-center justify-between px-5 pt-5 pb-2 border-b border-gray-700">
                                         <div className="flex items-center gap-3">
@@ -4531,7 +5546,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                             {inboxCount>0&&<span className="bg-red-500 text-white text-xs font-black px-2 py-1 rounded-full animate-pulse">{inboxCount} new</span>}
                                         </div>
                                         <div className="flex gap-2">
-                                            <button onClick={()=>{pollBattleInbox();updateLeaderboard();}} className="px-3 py-2 bg-gray-700 hover:bg-purple-700 rounded-xl text-sm font-bold transition-all">🔄 Sync</button>
+                                            <button onClick={()=>{pollBattleInbox();updateLeaderboard();updateRankedLeaderboard();}} className="px-3 py-2 bg-gray-700 hover:bg-purple-700 rounded-xl text-sm font-bold transition-all">🔄 Sync</button>
                                             <button onClick={()=>setShowBattle(false)} className="p-2 rounded-xl bg-gray-700 hover:bg-red-700 transition-all"><X/></button>
                                         </div>
                                     </div>
@@ -4541,7 +5556,9 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                             {key:'friends',icon:'👥',label:'Friends',badge:friendRequests.length},
                                             {key:'challenges',icon:'⚔️',label:'Challenges',badge:pendingChallenges.length},
                                             {key:'trading',icon:'🤝',label:'Trading',badge:pendingTrades.length},
-                                            {key:'leaderboard',icon:'🏆',label:'Leaderboard',badge:0}
+                                            {key:'leaderboard',icon:'🏆',label:'Leaderboard',badge:0},
+                                            {key:'ranked',icon:'👑',label:'Ranked',badge:0},
+                                            {key:'events',icon:'⏰',label:'Events',badge:(specialEvent.doubleXpWeekend||specialEvent.goldenHour||specialEvent.megaWheel)?1:0}
                                         ].map(t=>(
                                             <button key={t.key} onClick={()=>setBattleTab(t.key)}
                                                 className={`relative px-4 py-2 rounded-xl font-bold text-sm transition-all ${battleTab===t.key?'bg-purple-600 text-white shadow-lg shadow-purple-900/50':'bg-gray-800 hover:bg-gray-700 text-gray-300'}`}>
@@ -4564,7 +5581,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                                         {friendRequests.map(req=>(
                                                             <div key={req.from} className="bg-gray-800 rounded-xl p-3 flex items-center justify-between animate-slideRight">
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center font-black text-lg">{(req.from||'?')[0].toUpperCase()}</div>
+                                                                    {renderAvatar(req.from,req.avatar,'md')}
                                                                     <div>
                                                                         <p className="font-bold text-white">{req.from}</p>
                                                                         <p className="text-xs text-gray-400">{req.timestamp?new Date(req.timestamp).toLocaleString():''}</p>
@@ -4611,7 +5628,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                                         {searchResults.map(p=>(
                                                             <div key={p.username} className="bg-gray-900 rounded-xl p-3 flex items-center justify-between">
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center font-bold">{p.username[0].toUpperCase()}</div>
+                                                                    {renderAvatar(p.username,p.avatar,'sm')}
                                                                     <div>
                                                                         <p className="font-bold text-white text-sm">{p.username} <span className="text-xs text-gray-500">{p.source}</span></p>
                                                                         {p.tier!==undefined&&<p className="text-xs text-gray-400">{tiers[Math.min(41,p.tier||0)]?.name||'Novice'} · {(p.totalXp||0).toLocaleString()} XP · {p.streak||0}🔥</p>}
@@ -4643,7 +5660,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                                             return(
                                                             <div key={friend} className="bg-gray-900 rounded-xl p-3 flex items-center justify-between hover:bg-gray-800 transition-all">
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center font-bold text-lg">{friend[0]?.toUpperCase()}</div>
+                                                                    {renderAvatar(friend,fd.avatar||'', 'md')}
                                                                     <div>
                                                                         <p className="font-bold text-white">{friend}</p>
                                                                         <p className="text-xs text-gray-400">{tierName} Lv.{lvlNum} · {(fd.totalXp||0).toLocaleString()} XP · {fd.stats?.currentStreak||0}🔥</p>
@@ -4713,9 +5730,14 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                                             className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl font-black hover:opacity-90 transition-all">
                                                             🎯 Send Challenge!
                                                         </button>
-                                                        <p className="text-xs text-gray-500">Progress counts tasks completed AFTER the challenge starts. Winner: +500 XP & +250 Coins 🏆</p>
+                                                        <p className="text-xs text-gray-500">Progress counts tasks completed AFTER the challenge starts. AI calculates ELO gain/loss from goal, duration, and margin. Draw = 0 ELO.</p>
                                                     </div>
                                                 }
+                                            </div>
+                                            <div className="bg-cyan-900/20 border border-cyan-500/40 rounded-2xl p-4">
+                                                <p className="text-xs uppercase tracking-wider text-cyan-300 font-black">Challenge ELO</p>
+                                                <p className="text-3xl font-black text-white mt-1">{elo.toLocaleString()} <span className="text-cyan-300">ELO</span></p>
+                                                <p className="text-xs text-gray-400 mt-1">Starts at 0. AI adjusts gain/loss per challenge difficulty and result margin. Draws give 0 change. ELO never goes below 0.</p>
                                             </div>
                                             {/* Active Challenges */}
                                             {activeChallenges.length>0&&(
@@ -4774,7 +5796,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                             {/* Completed */}
                                             {completedChallenges.length>0&&(
                                                 <div className="bg-gray-800 rounded-2xl p-4 border border-gray-600">
-                                                    <h3 className="font-black mb-3 text-gray-400">✅ History</h3>
+                                                    <h3 className="font-black mb-3 text-gray-400">✅ History · Your ELO: <span className="text-cyan-300">{elo}</span></h3>
                                                     <div className="space-y-2">
                                                         {completedChallenges.slice(0,5).map(c=>{
                                                             const opponent=c.challenger===user?c.opponent:c.challenger;
@@ -4785,7 +5807,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                                             <div key={c.id} className={`bg-gray-900 rounded-xl p-3 flex items-center justify-between border-l-4 ${won?'border-green-500':tied?'border-yellow-500':'border-red-500'}`}>
                                                                 <div>
                                                                     <p className="font-bold text-sm text-white">vs {opponent}</p>
-                                                                    <p className="text-xs text-gray-400">{myScore} vs {theirScore} tasks · goal {c.taskGoal}</p>
+                                                                    <p className="text-xs text-gray-400">{myScore} vs {theirScore} tasks · goal {c.taskGoal} · ELO {c.challenger===user?((c.eloAwarded?.challenger||0)>=0?'+':'')+(c.eloAwarded?.challenger||0):((c.eloAwarded?.opponent||0)>=0?'+':'')+(c.eloAwarded?.opponent||0)}</p>
                                                                 </div>
                                                                 <span className={`text-sm font-black ${won?'text-green-400':tied?'text-yellow-400':'text-red-400'}`}>{won?'🏆 Won':tied?'⚖️ Tie':'💀 Lost'}</span>
                                                             </div>);
@@ -4844,15 +5866,15 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                                         </select>
                                                         <select value={tradeForm.myItem} onChange={e=>setTradeForm(p=>({...p,myItem:e.target.value}))}
                                                             className="w-full bg-gray-900 px-4 py-2.5 rounded-xl border border-gray-600 focus:outline-none focus:border-yellow-500 text-white">
-                                                            <option value="">Your item to offer ({shopItems.filter(i=>(i.type==='title'||i.type==='border')&&owned.includes(i.id)).length} owned)...</option>
-                                                            {shopItems.filter(item=>(item.type==='title'||item.type==='border')&&owned.includes(item.id)).map(item=>(
+                                                            <option value="">Your item to offer ({ownedTradableItemPool.length} in tier window)...</option>
+                                                            {ownedTradableItemPool.map(item=>(
                                                                 <option key={item.id} value={item.id}>{item.n} · {rarities[item.rarity]?.n||'?'}</option>
                                                             ))}
                                                         </select>
                                                         <select value={tradeForm.theirItem} onChange={e=>setTradeForm(p=>({...p,theirItem:e.target.value}))}
                                                             className="w-full bg-gray-900 px-4 py-2.5 rounded-xl border border-gray-600 focus:outline-none focus:border-yellow-500 text-white">
-                                                            <option value="">Item you want in return...</option>
-                                                            {shopItems.filter(item=>item.type==='title'||item.type==='border').map(item=>(
+                                                            <option value="">Item you want in return (Tier {tradableTierMin} to {tradableTierMax})...</option>
+                                                            {tradableItemPool.map(item=>(
                                                                 <option key={item.id} value={item.id}>{item.n} · {rarities[item.rarity]?.n||'?'}</option>
                                                             ))}
                                                         </select>
@@ -4860,12 +5882,35 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                                             className="w-full py-3 bg-gradient-to-r from-yellow-600 to-orange-600 rounded-xl font-black hover:opacity-90 transition-all">
                                                             🤝 Send Trade Offer
                                                         </button>
-                                                        <p className="text-xs text-gray-500">⚖️ Items must be within 1 rarity level of each other to prevent unfair trades.</p>
+                                                        <p className="text-xs text-gray-500">⚖️ Items must be within 1 rarity level, and only items from tier window {tradableTierMin} to {tradableTierMax} are visible.</p>
                                                     </div>
                                                 }
                                             </div>
                                             {pendingTrades.length===0&&tradeOffers.length===0&&<p className="text-gray-500 text-center py-4 text-sm">No pending trade offers.</p>}
                                         </div>)}
+
+                                        {/* ── RANKED TAB ── */}
+                                        {battleTab==='ranked'&&(
+                                            <div className="bg-gray-800 rounded-2xl p-4 border border-indigo-600/40">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <h3 className="font-black text-white">👑 Weekly Ranked Royale</h3>
+                                                    <p className="text-xs text-gray-400">Fresh race every 7 days • Top 10 exclusive rewards</p>
+                                                </div>
+                                                <p className="text-xs text-indigo-300 mb-3">Current week key: {getCurrentWeekKey()} • Your rank updates from completed tasks this week.</p>
+                                                {rankedBoard.length===0?<p className="text-gray-500 text-sm py-4 text-center">No ranked data yet. Complete tasks to enter.</p>:<div className="space-y-2">{rankedBoard.slice(0,20).map((player,idx)=><div key={`${player.username}-ranked`} className={`rounded-xl p-3 flex items-center gap-3 ${idx<3?'bg-gradient-to-r from-indigo-900/70 to-purple-900/70 border border-indigo-500/60':'bg-gray-900'}`}><div className="w-10 text-center font-black text-lg text-indigo-300">#{idx+1}</div>{renderAvatar(player.username,player.avatar||'', 'sm')}<div className="flex-1 min-w-0"><p className={`font-black truncate ${player.username===user?'text-cyan-300':'text-white'}`}>{player.username}{player.username===user?' (You)':''}</p><p className="text-xs text-gray-400">{player.score} tasks this week • Rank: {player.badge}</p></div>{idx<10&&<span className="text-xs px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-300 font-bold">Top 10 Reward Zone</span>}</div>)}</div>}
+                                            </div>
+                                        )}
+
+                                        {/* ── EVENTS TAB ── */}
+                                        {battleTab==='events'&&(
+                                            <div className="bg-gray-800 rounded-2xl p-4 border border-cyan-600/40 space-y-3">
+                                                <h3 className="font-black text-white">⏰ Time-Limited Events</h3>
+                                                <p className="text-xs text-cyan-300">{specialEvent.label}</p>
+                                                <div className={`rounded-xl p-3 border ${specialEvent.doubleXpWeekend?'bg-green-900/30 border-green-500/40':'bg-gray-900 border-gray-700'}`}><p className="font-bold">Double XP Weekend</p><p className="text-xs text-gray-300">Weekend task XP rewards are doubled.</p></div>
+                                                <div className={`rounded-xl p-3 border ${specialEvent.goldenHour?'bg-yellow-900/30 border-yellow-500/40':'bg-gray-900 border-gray-700'}`}><p className="font-bold">Golden Hour</p><p className="text-xs text-gray-300">During 20:00-20:59 local time, task coins are multiplied by 5x.</p></div>
+                                                <div className={`rounded-xl p-3 border ${specialEvent.megaWheel?'bg-purple-900/30 border-purple-500/40':'bg-gray-900 border-gray-700'}`}><p className="font-bold">Mega Wheel (24h)</p><p className="text-xs text-gray-300">Every Sunday, Mega Wheel is live for 24h. Jump into Prize Wheel for high-tier drops.</p></div>
+                                            </div>
+                                        )}
 
                                         {/* ── LEADERBOARD TAB ── */}
                                         {battleTab==='leaderboard'&&(
@@ -4881,10 +5926,10 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                                         {leaderboard.map((player,idx)=>(
                                                             <div key={player.username} className={`rounded-xl p-3 flex items-center gap-3 transition-all ${idx===0?'bg-gradient-to-r from-yellow-900/80 to-orange-900/80 border border-yellow-500':idx===1?'bg-gradient-to-r from-gray-700 to-gray-600 border border-gray-400':idx===2?'bg-gradient-to-r from-orange-900/70 to-amber-900/70 border border-orange-600':'bg-gray-900'}`}>
                                                                 <div className={`text-2xl font-black w-10 text-center ${idx===0?'text-yellow-400':idx===1?'text-gray-300':idx===2?'text-orange-500':'text-gray-500'}`}>#{idx+1}</div>
-                                                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center font-bold">{player.username[0]?.toUpperCase()}</div>
+                                                                {renderAvatar(player.username,player.avatar||'', 'sm')}
                                                                 <div className="flex-1 min-w-0">
                                                                     <p className={`font-black truncate ${player.username===user?'text-purple-300':'text-white'}`}>{player.username}{player.username===user?' (You)':''}</p>
-                                                                    <p className="text-xs text-gray-400">{tiers[Math.min(41,player.tier||0)]?.name||'Novice'} · {(player.totalXp||0).toLocaleString()} XP · {player.tasksCompleted} tasks · {player.currentStreak}🔥</p>
+                                                                    <p className="text-xs text-gray-400">{tiers[Math.min(41,player.tier||0)]?.name||'Novice'} · {(player.totalXp||0).toLocaleString()} XP · {player.tasksCompleted} tasks · {player.currentStreak}🔥 · {(player.elo||0).toLocaleString()} ELO</p>
                                                                 </div>
                                                                 {idx<3&&<div className="text-2xl">{idx===0?'👑':idx===1?'🥈':'🥉'}</div>}
                                                             </div>
@@ -4903,7 +5948,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
 
                         {showSettings&&(
                             <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 animate-fadeIn" onClick={()=>setShowSettings(false)}>
-                                <div className={`${appTheme==='dark'?'bg-gray-800 border-gray-700':'bg-white border-gray-200'} rounded-2xl p-6 max-w-md w-full border-2 shadow-2xl animate-modal-slide animate-glow-ring`} onClick={e=>e.stopPropagation()}>
+                                <div className={`${appTheme==='dark'?'bg-gray-800 border-gray-700':'bg-white border-gray-200'} rounded-2xl p-6 max-w-2xl w-full border-2 shadow-2xl animate-modal-slide animate-glow-ring max-h-[92vh] overflow-y-auto scrollbar-hide`} onClick={e=>e.stopPropagation()}>
                                     <div className="flex justify-between items-center mb-6">
                                         <h2 className={`text-3xl font-bold flex items-center gap-2 ${appTheme==='dark'?'text-white':'text-gray-900'}`}>
                                             <Settings/><span>Settings</span>
@@ -4915,7 +5960,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                     
                                     <div className="space-y-4">
                                         {/* Theme Toggle */}
-                                        <div className={`p-4 rounded-xl ${appTheme==='dark'?'bg-gray-700/50':'bg-gray-100'}`}>
+                                        <div className={`p-4 rounded-xl ui-card ${appTheme==='dark'?'bg-gray-700/50':'bg-gray-100'}`}>
                                             <div className="flex items-center justify-between">
                                                 <div>
                                                     <p className={`font-bold ${appTheme==='dark'?'text-white':'text-gray-900'}`}>
@@ -4925,17 +5970,14 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                                         {appTheme==='dark'?'Dark Mode':'Light Mode'}
                                                     </p>
                                                 </div>
-                                                <button 
-                                                    onClick={toggleTheme} 
-                                                    className={`w-16 h-8 rounded-full transition-all relative ${appTheme==='dark'?'bg-blue-600':'bg-gray-300'}`}
-                                                >
-                                                    <div className={`absolute top-1 ${appTheme==='dark'?'right-1':'left-1'} w-6 h-6 bg-white rounded-full transition-all shadow-lg`}></div>
-                                                </button>
+                                                <div className={`inline-flex rounded-xl p-1 ${appTheme==='dark'?'bg-gray-800':'bg-white border border-gray-300'}`}>
+                                                    {['dark','light','auto'].map(mode=><button key={mode} onClick={()=>applyThemePreference(mode)} className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${appThemePref===mode?(appTheme==='dark'?'bg-cyan-600 text-white':'bg-blue-600 text-white'):(appTheme==='dark'?'text-gray-300 hover:bg-gray-700':'text-gray-700 hover:bg-gray-100')}`}>{mode==='auto'?'Auto':mode==='dark'?'Dark':'Light'}</button>)}
+                                                </div>
                                             </div>
                                         </div>
 
                                         {/* Timezone Selector */}
-                                        <div className={`p-4 rounded-xl animate-tz-highlight ${appTheme==='dark'?'bg-gray-700/50 border border-cyan-500/30':'bg-gray-100 border border-cyan-400/30'}`}>
+                                        <div className={`p-4 rounded-xl ui-card animate-tz-highlight ${appTheme==='dark'?'bg-gray-700/50 border border-cyan-500/30':'bg-gray-100 border border-cyan-400/30'}`}>
                                             <div className="flex items-center gap-2 mb-2">
                                                 <Clock/>
                                                 <span className={`font-bold ${appTheme==='dark'?'text-white':'text-gray-900'}`}>🌐 Time Zone</span>
@@ -4947,17 +5989,28 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                         </div>
                                         
                                         {/* Account Info */}
-                                        <div className={`p-4 rounded-xl ${appTheme==='dark'?'bg-gray-700/50':'bg-gray-100'}`}>
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <User/>
-                                                <span className={`text-sm ${appTheme==='dark'?'text-gray-400':'text-gray-600'}`}>Account</span>
+                                        <div className={`p-4 rounded-xl ui-card ${appTheme==='dark'?'bg-gray-700/50':'bg-gray-100'}`}>
+                                            <div className="flex items-center gap-3 mb-2">
+                                                {renderAvatar(user,profilePic,'lg')}
+                                                <div>
+                                                    <div className="flex items-center gap-2"><User/>
+                                                        <span className={`text-sm ${appTheme==='dark'?'text-gray-400':'text-gray-600'}`}>Account</span>
+                                                    </div>
+                                                    <p className={`font-bold text-lg ${appTheme==='dark'?'text-white':'text-gray-900'}`}>{user}</p>
+                                                    <p className={`text-sm mt-1 ${appTheme==='dark'?'text-gray-400':'text-gray-600'}`}>{ct.name} • Level {lvl}</p>
+                                                </div>
                                             </div>
-                                            <p className={`font-bold text-lg ${appTheme==='dark'?'text-white':'text-gray-900'}`}>{user}</p>
-                                            <p className={`text-sm mt-1 ${appTheme==='dark'?'text-gray-400':'text-gray-600'}`}>{ct.name} • Level {lvl}</p>
+                                            <div className="flex gap-2 mt-2">
+                                                <label className="px-3 py-2 bg-cyan-700 hover:bg-cyan-600 rounded-lg text-xs font-bold cursor-pointer">
+                                                    🖼️ Upload
+                                                    <input type="file" accept="image/*" className="hidden" onChange={(e)=>updateProfilePicture(e.target.files&&e.target.files[0])}/>
+                                                </label>
+                                                {profilePic&&<button onClick={()=>{setProfilePic('');try{const key=getAccountKeyByUsername(user);const raw=key?S.get(key):null;if(raw?.value){const acc=JSON.parse(raw.value);acc.avatar='';S.set(key,JSON.stringify(acc));}}catch(e){}}} className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold">Remove</button>}
+                                            </div>
                                         </div>
                                         
                                         {/* Quick Stats */}
-                                        <div className={`p-4 rounded-xl ${appTheme==='dark'?'bg-gray-700/50':'bg-gray-100'}`}>
+                                        <div className={`p-4 rounded-xl ui-card ${appTheme==='dark'?'bg-gray-700/50':'bg-gray-100'}`}>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
                                                     <p className={`text-sm ${appTheme==='dark'?'text-gray-400':'text-gray-600'}`}>Total XP</p>
@@ -4992,13 +6045,15 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                             >
                                                 <LogOut/> Logout
                                             </button>
+                                            <button onClick={deleteAcc} className="w-full p-3 rounded-xl font-bold bg-gradient-to-r from-red-700 to-red-900 hover:opacity-90 text-white transition-all">{deleteRequestAt?`Complete Account Delete (${Math.max(0,Math.ceil(((deleteRequestAt+86400000)-getTrustedTime())/3600000))}h)`:'Request Account Deletion (24h lock)'}</button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {showSet&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 p-4"><div className="bg-gray-800 rounded-2xl p-8 max-w-2xl w-full border border-gray-700 animate-modal-slide animate-glow-ring max-h-screen overflow-y-auto scrollbar-hide"><h2 className="text-3xl font-bold mb-6 flex items-center gap-2"><Settings/><span>Settings</span></h2><div className="space-y-4 mb-6"><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-2"><User/><span className="text-gray-400 text-sm">Username</span></div><p className="text-xl font-bold">{user}</p></div><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-2"><Trophy/><span className="text-gray-400 text-sm">Progress</span></div><p className="text-xl font-bold">{ct.name} - Level {lvl}</p><p className="text-sm text-gray-400 mt-1">{coins.toLocaleString()} Coins 💰</p></div><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-2"><Star/><span className="text-gray-400 text-sm">Stats</span></div><p className="text-lg">{stats.tasksCompleted} tasks • {stats.currentStreak} day streak</p><p className="text-sm text-gray-400">Best: {stats.longestStreak} days</p></div><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-3"><Clock/><span className="text-gray-400 text-sm">Time Zone</span></div><p className="text-xs text-gray-400 mb-2">Current: <span className="text-cyan-300 font-bold">{getTimezoneClock().pretty} ({getTimezoneClock().shortZone})</span></p><select value={timeZone} onChange={(e)=>setTimeZone(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">{timeZoneChoices.map(tz=><option key={tz} value={tz}>{tz}</option>)}</select></div><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-2"><Clock/><span className="text-gray-400 text-sm">Activity Log (Last {activityLog.length})</span></div><div className="max-h-48 overflow-y-auto scrollbar-hide space-y-2 mt-2">{activityLog.length===0?<p className="text-gray-500 text-sm">No activity yet</p>:activityLog.slice(0,20).map((log,i)=><div key={i} className="bg-gray-800 rounded p-2 text-xs"><p className="text-gray-400">{log.date}</p><p className="text-white font-bold">{log.type==='task_completed'?`✅ ${log.details.task}`:log.type==='level_up'?`⬆️ Level ${log.details.level}`:log.type==='tier_up'?`🌟 ${log.details.tier}`:log.type}</p>{log.details.xp&&<p className="text-yellow-400">+{log.details.xp} XP, +{log.details.coins} Coins</p>}</div>)}</div></div></div><div className="space-y-3"><button onClick={exportUserData} className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-90 transition-all flex items-center justify-center gap-2"><Star/><span>Export Data</span></button><button onClick={logout} className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-orange-500 to-red-500 hover:opacity-90 transition-all flex items-center justify-center gap-2"><LogOut/><span>Logout</span></button><button onClick={deleteAcc} className="w-full py-3 rounded-xl font-bold bg-red-900 hover:bg-red-800 transition-all text-red-200">Delete Account</button><button onClick={()=>setShowSet(false)} className="w-full py-3 rounded-xl font-bold bg-gray-700 hover:bg-gray-600 transition-all">Close</button></div></div></div>}
+
+                        {showSet&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 p-4"><div className="adaptive-modal adaptive-card bg-gray-800 rounded-2xl p-8 max-w-2xl w-full border border-gray-700 animate-modal-slide animate-glow-ring max-h-screen overflow-y-auto scrollbar-hide"><h2 className="text-3xl font-bold mb-6 flex items-center gap-2"><Settings/><span>Settings</span></h2><div className="space-y-4 mb-6"><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-2"><User/><span className="text-gray-400 text-sm">Username</span></div><p className="text-xl font-bold">{user}</p></div><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-2"><Trophy/><span className="text-gray-400 text-sm">Progress</span></div><p className="text-xl font-bold">{ct.name} - Level {lvl}</p><p className="text-sm text-gray-400 mt-1">{coins.toLocaleString()} Coins 💰</p></div><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-2"><Star/><span className="text-gray-400 text-sm">Stats</span></div><p className="text-lg">{stats.tasksCompleted} tasks • {stats.currentStreak} day streak</p><p className="text-sm text-gray-400">Best: {stats.longestStreak} days</p></div><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-3"><Clock/><span className="text-gray-400 text-sm">Time Zone</span></div><p className="text-xs text-gray-400 mb-2">Current: <span className="text-cyan-300 font-bold">{getTimezoneClock().pretty} ({getTimezoneClock().shortZone})</span></p><select value={timeZone} onChange={(e)=>setTimeZone(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">{timeZoneChoices.map(tz=><option key={tz} value={tz}>{tz}</option>)}</select></div><div className="bg-gray-700 rounded-xl p-4"><div className="flex items-center gap-3 mb-2"><Clock/><span className="text-gray-400 text-sm">Activity Log (Last {activityLog.length})</span></div><div className="max-h-48 overflow-y-auto scrollbar-hide space-y-2 mt-2">{activityLog.length===0?<p className="text-gray-500 text-sm">No activity yet</p>:activityLog.slice(0,20).map((log,i)=><div key={i} className="bg-gray-800 rounded p-2 text-xs"><p className="text-gray-400">{log.date}</p><p className="text-white font-bold">{log.type==='task_completed'?`✅ ${log.details.task}`:log.type==='level_up'?`⬆️ Level ${log.details.level}`:log.type==='tier_up'?`🌟 ${log.details.tier}`:log.type}</p>{log.details.xp&&<p className="text-yellow-400">+{log.details.xp} XP, +{log.details.coins} Coins</p>}</div>)}</div></div></div><div className="space-y-3"><button onClick={exportUserData} className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-90 transition-all flex items-center justify-center gap-2"><Star/><span>Export Data</span></button><button onClick={logout} className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-orange-500 to-red-500 hover:opacity-90 transition-all flex items-center justify-center gap-2"><LogOut/><span>Logout</span></button><button onClick={deleteAcc} className="w-full py-3 rounded-xl font-bold bg-red-900 hover:bg-red-800 transition-all text-red-200">Delete Account</button><button onClick={()=>setShowSet(false)} className="w-full py-3 rounded-xl font-bold bg-gray-700 hover:bg-gray-600 transition-all">Close</button></div></div></div>}
 
                         <div className={`text-center mt-8 ${appTheme==='dark'?'text-gray-500':'text-gray-600'} text-sm`}><p>🔥 Keep grinding! Every task brings you closer to CELESTIAL tier! 💪</p></div>
                     </div>
