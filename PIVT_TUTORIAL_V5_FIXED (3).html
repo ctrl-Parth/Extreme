@@ -1103,9 +1103,11 @@
                 const featureReport=runFullFeatureAudit();
                 const completeReport=runFinalCompleteDebug();
                 const ultimateReport=runUltimateGameplayAudit();
+                const bugPass=Array.isArray(bugReport)?bugReport.filter(c=>c.pass).length:0;
+                const bugTotal=Array.isArray(bugReport)?bugReport.length:0;
                 const summary={
                     time:`${timeReport.pass}/${timeReport.total}`,
-                    bug:`${bugReport.passCount}/${bugReport.total}`,
+                    bug:`${bugPass}/${bugTotal}`,
                     feature:`${featureReport.passCount}/${featureReport.total}`,
                     complete:`${completeReport.pass}/${completeReport.total}`,
                     ultimate:`${ultimateReport.pass}/${ultimateReport.total}`
@@ -2121,13 +2123,21 @@ const runBugChecks=()=>{
                 setForgotOtpMeta(null);
                 setOtpModal(null);
 
-                const report=runPrePublishFinalCheck();
-                const total=report.checks.length||1;
-                const passed=report.checks.filter(c=>c.ok).length;
-                const passRate=Math.round((passed/total)*100);
+                let guideBanner='🧭 Guided demo ready';
+                try{
+                    const report=runPrePublishFinalCheck();
+                    const bugChecks=Array.isArray(report?.bugReport)?report.bugReport:[];
+                    const passed=bugChecks.filter(c=>c.pass).length;
+                    const total=bugChecks.length||1;
+                    const passRate=Math.round((passed/total)*100);
+                    guideBanner=`🧭 Guided demo ready • Bug checks ${passed}/${total} (${passRate}%)`;
+                }catch(e){
+                    console.warn('Guide launch bug-check failed',e);
+                    guideBanner='🧭 Guided demo ready • Bug check fallback mode';
+                }
 
                 setSecurityMode('normal');
-                setSecurityBanner({message:`🧭 Guided demo ready • Bug checks ${passed}/${total} (${passRate}%)`,mode:'normal',at:getTrustedTime()});
+                setSecurityBanner({message:guideBanner,mode:'normal',at:getTrustedTime()});
                 setTimeout(()=>setSecurityBanner(null),3200);
 
                 setTutorialCompleted(false);
