@@ -1408,6 +1408,23 @@
 
             const hashOtp=(otp,email,username,salt)=>hashPassword(`${otp}-${email}-${username}`,salt);
 
+            const sendEmailOtpViaEmailJS=async({email,username,otp})=>{
+                const expiryText=`${Math.round(APP_CONFIG.otp.expiryMs/60000)} minutes`;
+                const baseMessage=`Hi ${username}, your P.I.V.T OTP code is ${otp}. It expires in ${expiryText}.`;
+                const payloads=[
+                    {to_email:email,to_name:username,user_email:email,user_name:username,from_name:'P.I.V.T Security',reply_to:'parthbaghele@gmail.com',otp_code:otp,app_name:'P.I.V.T',expires_in:expiryText,message:baseMessage,subject:'P.I.V.T OTP'},
+                    {email,name:username,passcode:otp,otp:otp,code:otp,message:baseMessage,time_to_expire:expiryText,subject:'P.I.V.T OTP',to_email:email}
+                ];
+                const failures=[];
+                for(const payload of payloads){
+                    try{return await emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,payload,{publicKey:EMAILJS_PUBLIC_KEY});}
+                    catch(err){failures.push({status:err?.status||0,text:(err?.text||err?.message||'').toString()});}
+                }
+                const error=new Error('All EmailJS payload attempts failed');
+                error.failures=failures;
+                throw error;
+            };
+
             const getPasswordChecklist=(password)=>({
                 length:password&&password.length>=8,
                 upper:/[A-Z]/.test(password||''),
@@ -1458,32 +1475,19 @@
                 setResetMsg('📤 Sending OTP to your email...');
 
                 try{
-                    await emailjs.send(
-                        EMAILJS_SERVICE_ID,
-                        EMAILJS_TEMPLATE_ID,
-                        {
-                            to_email:   email,
-                            to_name:    canonicalUsername,
-                            user_email: email,
-                            user_name:  canonicalUsername,
-                            from_name:  'P.I.V.T Security',
-                            reply_to:   'parthbaghele@gmail.com',
-                            otp_code:   otp,
-                            app_name:   'P.I.V.T',
-                            expires_in: `${Math.round(APP_CONFIG.otp.expiryMs/60000)} minutes`
-                        },
-                        {publicKey: EMAILJS_PUBLIC_KEY}
-                    );
+                    if(typeof emailjs?.init==='function')emailjs.init({publicKey:EMAILJS_PUBLIC_KEY});
+                    const sendResult=await sendEmailOtpViaEmailJS({email,username:canonicalUsername,otp});
                     setForgotOtpMeta({otpHash,salt,expires,attempts:0,username:canonicalUsername,email,sentAt:getTrustedTime()});
-                    setResetMsg('✅ OTP sent to your email! Check your inbox — and your spam/junk folder if you don\'t see it within a minute. The email comes from parthbaghele@gmail.com.');
+                    setResetMsg(`✅ OTP sent to your email! Check inbox/spam. EmailJS status: ${sendResult?.status||'ok'}`);
                 }catch(err){
                     console.error('EmailJS error:',err);
-                    const status=err?.status||0;
-                    const detail=(err?.text||err?.message||'').toString();
-                    if(status===400)setAuthErr(`Email delivery failed (400): check EmailJS template vars. ${detail}`.trim());
+                    const firstFailure=Array.isArray(err?.failures)&&err.failures.length?err.failures[0]:null;
+                    const status=firstFailure?.status||err?.status||0;
+                    const detail=(firstFailure?.text||err?.text||err?.message||'').toString();
+                    if(status===400)setAuthErr(`Email delivery failed (400): template mismatch. ${detail}`.trim());
                     else if(status===401||status===403)setAuthErr('Email delivery failed: invalid EmailJS Public Key. Double-check it.');
                     else if(status===429)setAuthErr('Too many emails sent — EmailJS free tier limit hit. Wait a few minutes.');
-                    else setAuthErr('Failed to send OTP. Check your internet connection and try again.');
+                    else setAuthErr(`Failed to send OTP email. ${detail}`.trim());
                     // Graceful fallback so password reset flow still works when provider is down/misconfigured
                     setForgotOtpMeta({otpHash,salt,expires,attempts:0,username:canonicalUsername,email,sentAt:getTrustedTime()});
                     setOtpModal({code:otp,expires,email});
