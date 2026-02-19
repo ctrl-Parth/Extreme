@@ -2108,6 +2108,51 @@ const runBugChecks=()=>{
                 },2200);
             };
 
+
+            const launchDemoExperience=(openTour=false)=>{
+                const demoName='demo-pilot';
+                stopFocusTimer();
+                if(audioRef.current){
+                    audioRef.current.pause();
+                    audioRef.current.currentTime=0;
+                }
+
+                setUser(demoName);
+                setAuthMode('welcome');
+                setAuthErr('');
+                setResetMsg('');
+                setForgotOtpMeta(null);
+                setOtpModal(null);
+                setSecurityMode('normal');
+                setSecurityBanner({message:'🧪 Demo mode active. No signup needed.',mode:'normal',at:getTrustedTime()});
+                setTimeout(()=>setSecurityBanner(null),2600);
+
+                setTasks([
+                    {id:getTrustedTime(),title:'Complete your first quick task',difficulty:'easy',duration:'15min',category:'personal',dueDate:'',priority:2,completed:false,xpRew:diffs.easy.xp,createdAt:getTrustedTime()},
+                    {id:getTrustedTime()+1,title:'Open Focus Mode and run a 5-minute sprint',difficulty:'medium',duration:'30min',category:'work',dueDate:'',priority:3,completed:false,xpRew:diffs.medium.xp,createdAt:getTrustedTime()},
+                    {id:getTrustedTime()+2,title:'Spin the wheel after checking achievements',difficulty:'hard',duration:'45min',category:'personal',dueDate:'',priority:4,completed:false,xpRew:diffs.hard.xp,createdAt:getTrustedTime()}
+                ]);
+                setDeletedTasks([]);
+                setGraveyardResurrections(0);
+                setXp(120);
+                setTotalXp(120);
+                setCoins(350);
+                setLvl(2);
+                setTier(0);
+                setSeason(1);
+                setStats({tasksCompleted:1,currentStreak:1,longestStreak:1,lastTaskDate:new Date(getTrustedTime()).toDateString(),lastLoginDate:new Date(getTrustedTime()).toDateString(),streakSaverUsedThisWeek:false,weekStartDate:null});
+                setShowFocus(false);
+                setFocusTimer(false);
+                setFocusTask(null);
+                setFocusTimeRemaining(0);
+                setMusicEnabled(false);
+                setMusicPlaying(false);
+
+                setTutorialCompleted(false);
+                setTutorialStep(openTour?0:5);
+                setShowTutorial(true);
+            };
+
             const logout=()=>{
                 S.delete('current-user');
                 setUser(null);
@@ -4443,6 +4488,8 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                     <div className="space-y-4 adaptive-stack">
                                         <button onClick={()=>setAuthMode('login')} className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-cyan-500 to-blue-500 hover:opacity-90 transition-all transform hover:scale-105 shadow-lg">Login</button>
                                         <button onClick={()=>setAuthMode('signup')} className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 transition-all transform hover:scale-105 shadow-lg">Create Account</button>
+                                        <button onClick={()=>launchDemoExperience(false)} className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-90 transition-all">Try Demo</button>
+                                        <button onClick={()=>launchDemoExperience(true)} className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-indigo-500 to-violet-600 hover:opacity-90 transition-all">Start App Tour</button>
                                     </div>
                                     <button 
                                         onClick={()=>{
@@ -5260,8 +5307,23 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                         <div className="w-full h-4 bg-gray-700 rounded-full overflow-hidden mb-6">
                                             <div className={`h-full transition-all ${focusMode==='work'?'bg-gradient-to-r from-purple-500 to-indigo-500':'bg-gradient-to-r from-green-500 to-emerald-500'}`} style={{width:`${Math.min(100,Math.max(0,(focusTimeRemaining/((focusMode==='work'?activeFocusConfig.focusMinutes:activeFocusConfig.breakMinutes)*60))*100))}%`}}></div>
                                         </div>
-                                        
-                                        
+
+                                        <div className="bg-gray-700 rounded-xl p-4 mb-6 text-left">
+                                            <h3 className="text-sm font-bold mb-3 text-cyan-300">🎵 Focus Music Player</h3>
+                                            {!musicEnabled?(
+                                                <button onClick={()=>setMusicEnabled(true)} className="w-full py-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg font-bold text-sm">Enable Music</button>
+                                            ):(
+                                                <div className="space-y-2">
+                                                    <p className="text-xs text-gray-300">{selectedTrack?.name||'Unknown Track'} • {selectedTrack?.artist||'Unknown Artist'}</p>
+                                                    <div className="flex gap-2 justify-center items-center">
+                                                        <button onClick={()=>shiftVisibleTrack(-1)} className="px-3 py-1 bg-gray-600 hover:bg-gray-500 rounded-lg">⏮</button>
+                                                        <button onClick={toggleMusicPlayback} className="px-4 py-1 bg-cyan-600 hover:bg-cyan-700 rounded-lg">{musicPlaying?'⏸':'▶️'}</button>
+                                                        <button onClick={()=>shiftVisibleTrack(1)} className="px-3 py-1 bg-gray-600 hover:bg-gray-500 rounded-lg">⏭</button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
                                         <button onClick={stopFocusSession} className="w-full py-3 rounded-xl font-bold bg-red-600 hover:bg-red-500 transition-all">
                                             Stop Session
                                         </button>
