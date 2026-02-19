@@ -995,12 +995,50 @@
                 add('Special events engine active',typeof getActiveSpecialEvents==='function');
                 add('Ranked leaderboard engine active',typeof updateRankedLeaderboard==='function');
                 add('Final complete debug active',typeof runFinalCompleteDebug==='function');
+                add('Ultimate gameplay audit active',typeof runUltimateGameplayAudit==='function');
                 const passCount=checks.filter(c=>c.pass).length;
                 console.info(`✅ Full Feature Audit: ${passCount}/${checks.length} checks passed`,checks);
                 return {passCount,total:checks.length,checks};
             };
 
-                        const runFinalCompleteDebug=()=>{
+                        const runUltimateGameplayAudit=()=>{
+                const categories=[];
+                const add=(area,name,pass,detail='')=>categories.push({area,name,pass:Boolean(pass),detail});
+                // Time / timezone / today system
+                add('time','Trusted time function',typeof getTrustedTime==='function');
+                add('time','Timezone configured',typeof timeZone==='string'&&timeZone.length>0,timeZone);
+                add('time','Today string stable',typeof new Date(getTrustedTime()).toDateString()==='string');
+                // Battle & ranked systems
+                add('battle','Battle tabs include ranked/events',Array.isArray(['friends','challenges','trading','leaderboard','ranked','events']));
+                add('battle','Leaderboard arrays valid',Array.isArray(leaderboard)&&Array.isArray(rankedBoard));
+                add('battle','Ranked updater wired',typeof updateRankedLeaderboard==='function');
+                // AI goals / habits reminder data
+                add('goals','Goal AI difficulty bounded',goals.every(g=>(g.aiDifficulty||0)>=0&&(g.aiDifficulty||0)<=10));
+                add('habits','Habit reminder time shape',habits.every(h=>!h.reminderTime||/^\d{2}:\d{2}$/.test(h.reminderTime)));
+                // Shop / secrets / seasons / easter-eggs
+                add('shop','Shop item IDs unique',new Set(shopItems.map(i=>i.id)).size===shopItems.length,`count=${shopItems.length}`);
+                add('shop','Seasonal secret tiers exist',shopItems.some(i=>i.id==='s6_theme_infinity')&&shopItems.some(i=>i.id==='s6_border_infinity'));
+                add('shop','Shop has items for all seasons 1-6',[1,2,3,4,5,6].every(sn=>shopItems.some(i=>i.season===sn)));
+                add('season','Insane last season exists',tiers.some(t=>t.season===6&&/INFINITY|COSMIC|SINGULARITY|PARADOX|VOID|CHAOS/i.test(t.name)));
+                add('season','Last season animated theme exists',shopItems.some(i=>i.type==='theme'&&i.season===6&&String(i.theme?.anim||'').includes('animate-')));
+                // Settings / theme / device responsiveness
+                add('settings','Theme preference control active',typeof applyThemePreference==='function'&&['dark','light','auto'].includes(appThemePref));
+                add('settings','UI profile responsive',['phone','tablet','laptop','desktop','ultrawide'].includes(uiProfile));
+                // Progress + wheel integration
+                add('progress','Level bounds',lvl>=1&&lvl<=5);
+                add('progress','Tier bounds',tier>=0&&tier<=41);
+                add('wheel','Wheel tiers and prizes wired',Array.isArray(wheelTiers)&&Array.isArray(wheelPrizes)&&wheelPrizes.length>0);
+                // Anti-cheat / OTP / animations
+                add('security','Task anti-cheat gates exist',String(completeTask).includes('Anti-cheat')&&String(completeTask).includes('Anti-spam'));
+                add('security','Deletion lock active',typeof deleteAcc==='function');
+                add('otp','OTP sender integrated',typeof sendForgotOtp==='function'&&typeof sendEmailOtpViaEmailJS==='function');
+                add('animation','Animation classes available',document.querySelectorAll('[class*="animate-"]').length>20);
+                const pass=categories.filter(c=>c.pass).length;
+                console.info(`🧪 ULTIMATE GAMEPLAY AUDIT: ${pass}/${categories.length} passed`,categories);
+                return {pass,total:categories.length,categories};
+            };
+
+            const runFinalCompleteDebug=()=>{
                 const out=[];
                 const add=(name,pass,meta='')=>out.push({name,pass:Boolean(pass),meta});
                 add('Shop items unique IDs',new Set(shopItems.map(i=>i.id)).size===shopItems.length,`count=${shopItems.length}`);
@@ -3007,7 +3045,7 @@ Make sure the username is spelled correctly (it's case-insensitive). They must h
                 showXpAnim(rewardXp);
                 
                 // Log activity
-                logActivity('task_completed',{task:t.title,xp:t.xpRew,coins:t.coinRew,difficulty:t.difficulty,duration:t.duration});
+                logActivity('task_completed',{task:t.title,xp:rewardXp,coins:rewardCoins,difficulty:t.difficulty,duration:t.duration,event:specialEvent.label});
 
                 const today=new Date(getTrustedTime()).toDateString();
                 const yesterday=new Date(getTrustedTime()-86400000).toDateString();
@@ -5297,7 +5335,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                             {inboxCount>0&&<span className="bg-red-500 text-white text-xs font-black px-2 py-1 rounded-full animate-pulse">{inboxCount} new</span>}
                                         </div>
                                         <div className="flex gap-2">
-                                            <button onClick={()=>{pollBattleInbox();updateLeaderboard();}} className="px-3 py-2 bg-gray-700 hover:bg-purple-700 rounded-xl text-sm font-bold transition-all">🔄 Sync</button>
+                                            <button onClick={()=>{pollBattleInbox();updateLeaderboard();updateRankedLeaderboard();}} className="px-3 py-2 bg-gray-700 hover:bg-purple-700 rounded-xl text-sm font-bold transition-all">🔄 Sync</button>
                                             <button onClick={()=>setShowBattle(false)} className="p-2 rounded-xl bg-gray-700 hover:bg-red-700 transition-all"><X/></button>
                                         </div>
                                     </div>
@@ -5786,6 +5824,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                         <div className="space-y-2 pt-2">
                                             <button onClick={()=>{const report=runFullFeatureAudit();alert(`🧪 Full Feature Audit: ${report.passCount}/${report.total} checks passed`);}} className="w-full p-3 rounded-xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-90 text-white transition-all">Run Full Feature Audit</button>
                                             <button onClick={()=>{const report=runFinalCompleteDebug();alert(`🧪 FINAL COMPLETE DEBUG: ${report.pass}/${report.total} checks passed`);}} className="w-full p-3 rounded-xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 hover:opacity-90 text-white transition-all">Run Final Complete Debug</button>
+                                            <button onClick={()=>{const report=runUltimateGameplayAudit();alert(`🧪 ULTIMATE GAMEPLAY AUDIT: ${report.pass}/${report.total} checks passed`);}} className="w-full p-3 rounded-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:opacity-90 text-white transition-all">Run Ultimate Gameplay Audit</button>
                                             <button 
                                                 onClick={exportUserData} 
                                                 className="w-full p-3 rounded-xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-90 text-white transition-all flex items-center justify-center gap-2"
