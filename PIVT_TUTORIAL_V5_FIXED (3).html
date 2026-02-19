@@ -2679,6 +2679,40 @@ Make sure the username is spelled correctly (it's case-insensitive). They must h
                 allUsers.sort((a,b)=>(b.elo||0)-(a.elo||0)||(b.totalXp||0)-(a.totalXp||0));
                 setLeaderboard(allUsers.slice(0,20));
             };
+
+            const runBattleWheelConnectivityCheck=()=>{
+                const checks=[];
+                const add=(name,ok,details='')=>checks.push({name,ok:Boolean(ok),details});
+                add('Wheel tiers configured',Array.isArray(wheelTiers)&&wheelTiers.length>=1,`tiers:${wheelTiers.length}`);
+                add('Wheel prizes configured',Array.isArray(wheelPrizes)&&wheelPrizes.length>=8,`prizes:${wheelPrizes.length}`);
+                add('Spin handler connected',typeof spinWheel==='function');
+                add('Wheel state is sane',typeof wheelSpinning==='boolean'&&typeof wheelTier==='number');
+                add('Battle arrays connected',Array.isArray(friends)&&Array.isArray(challenges)&&Array.isArray(friendRequests));
+                add('Leaderboard arrays connected',Array.isArray(leaderboard)&&Array.isArray(rankedBoard));
+                add('Battle polling function connected',typeof pollBattleInbox==='function');
+                add('Challenge updater connected',typeof updateChallengeProgress==='function');
+                add('Ranked updater connected',typeof updateRankedLeaderboard==='function');
+                add('Leaderboard updater connected',typeof updateLeaderboard==='function');
+                const pass=checks.filter(c=>c.ok).length;
+                const total=checks.length;
+                console.table(checks.map(c=>({check:c.name,status:c.ok?'PASS':'FAIL',details:c.details||''})));
+                return {pass,total,checks};
+            };
+
+            const clearBattleAndLeaderboardAccounts=()=>{
+                const ok=confirm('Clear all local accounts, battle history, and local leaderboard data for a fresh start? This removes every local profile on this device.');
+                if(!ok)return;
+                const removed=wipeAllAccountsForFreshStart();
+                setLeaderboard([]);
+                setRankedBoard([]);
+                setFriends([]);
+                setFriendRequests([]);
+                setChallenges([]);
+                setTradeOffers([]);
+                setSecurityBanner({message:`🧹 Cleared ${removed} local account records. Fresh battle/leaderboard ready.`,mode:'hardened',at:getTrustedTime()});
+                setTimeout(()=>setSecurityBanner(null),3200);
+                logout();
+            };
             
             useEffect(()=>{
                 if(user){
@@ -6055,7 +6089,12 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                         {/* Actions */}
                                         <div className="space-y-2 pt-2">
                                             <button onClick={()=>{const report=runFullFeatureAudit();alert(`🧪 Full Feature Audit: ${report.passCount}/${report.total} checks passed`);}} className="w-full p-3 rounded-xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-90 text-white transition-all">Run Full Feature Audit</button>
-                                                                                        <button 
+                                            <button onClick={()=>{const r=runBattleWheelConnectivityCheck();alert(`🎯 Battle + Prize Wheel Check
+Passed: ${r.pass}/${r.total}
+
+${r.checks.map(c=>`${c.ok?'✅':'❌'} ${c.name}`).join('\n')}`);}} className="w-full p-3 rounded-xl font-bold bg-gradient-to-r from-fuchsia-600 to-pink-700 hover:opacity-90 text-white transition-all">Check Battle + Prize Wheel</button>
+                                            <button onClick={clearBattleAndLeaderboardAccounts} className="w-full p-3 rounded-xl font-bold bg-gradient-to-r from-red-800 to-black hover:opacity-90 text-white transition-all">Clear All Local Accounts (Battle/Leaderboard Reset)</button>
+                                            <button 
                                                 onClick={exportUserData} 
                                                 className="w-full p-3 rounded-xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-90 text-white transition-all flex items-center justify-center gap-2"
                                             >
