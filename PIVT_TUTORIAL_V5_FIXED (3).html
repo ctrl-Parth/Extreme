@@ -1074,6 +1074,24 @@
                 return {pass,total:out.length,results:out};
             };
 
+            const runTimeSystemDebug=()=>{
+                const now=getTrustedTime();
+                const zone=timeZone||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
+                const today=new Date(now).toDateString();
+                const events=getActiveSpecialEvents(now);
+                const checks=[];
+                const add=(name,pass,meta='')=>checks.push({name,pass:Boolean(pass),meta});
+                add('Trusted time numeric',typeof now==='number'&&!Number.isNaN(now),String(now));
+                add('Timezone set',typeof zone==='string'&&zone.length>0,zone);
+                add('Today key derived',typeof today==='string'&&today.length>0,today);
+                add('getTrustedHour range',getTrustedHour()>=0&&getTrustedHour()<=23,String(getTrustedHour()));
+                add('Event state shape',typeof events.doubleXpWeekend==='boolean'&&typeof events.goldenHour==='boolean'&&typeof events.megaWheel==='boolean',events.label||'');
+                add('Clock helper available',typeof getTimezoneClock==='function');
+                const pass=checks.filter(c=>c.pass).length;
+                console.info(`🕒 Time System Debug: ${pass}/${checks.length} passed`,checks);
+                return {pass,total:checks.length,checks,now,zone,today,events};
+            };
+
 const runBugChecks=()=>{
                 const checks=[];
                 const addCheck=(name,condition)=>checks.push({name,pass:Boolean(condition)});
@@ -1119,6 +1137,8 @@ const runBugChecks=()=>{
                 addCheck('Auth form has OTP field',Object.prototype.hasOwnProperty.call(authForm,'otp'));
                 addCheck('Username validator exists',typeof validateUsername==='function');
                 addCheck('Strict username uniqueness check active',typeof isUsernameTakenStrict==='function');
+                addCheck('Account registry active',typeof rebuildAccountRegistry==='function'&&typeof registerAccountInRegistry==='function');
+                addCheck('Time system debug active',typeof runTimeSystemDebug==='function');
                 addCheck('Fresh start cleanup function active',typeof wipeAllAccountsForFreshStart==='function');
                 addCheck('Username deobfuscation active',String(isInappropriateUsername).includes('deobfuscated'));
                 addCheck('Account deletion lock key wired',typeof deleteRequestAt==='number'||deleteRequestAt===null);
@@ -1670,7 +1690,40 @@ const runBugChecks=()=>{
                 }
             };
 
+            const ACCOUNT_REGISTRY_KEY='pivt-account-registry-v1';
             const normalizeUsernameKey=(username)=>sanitizeInput(username||'',20).toLowerCase();
+            const readAccountRegistry=()=>{try{return JSON.parse(localStorage.getItem(ACCOUNT_REGISTRY_KEY)||'{}')||{};}catch(e){return{};}};
+            const writeAccountRegistry=(registry)=>{try{localStorage.setItem(ACCOUNT_REGISTRY_KEY,JSON.stringify(registry||{}));}catch(e){}};
+            const rebuildAccountRegistry=()=>{
+                const registry={};
+                try{
+                    for(let i=0;i<localStorage.length;i++){
+                        const key=localStorage.key(i);
+                        if(!key||!key.endsWith('-account'))continue;
+                        const keyName=key.startsWith('user-')?key.slice(5).replace(/-account$/,''):key.replace(/-account$/,'');
+                        let storedName='';
+                        try{storedName=JSON.parse(localStorage.getItem(key)||'{}').username||'';}catch(e){}
+                        const normalized=normalizeUsernameKey(storedName||keyName);
+                        if(normalized)registry[normalized]=key;
+                    }
+                }catch(e){}
+                writeAccountRegistry(registry);
+                return registry;
+            };
+            const registerAccountInRegistry=(username,key)=>{
+                const normalized=normalizeUsernameKey(username);
+                if(!normalized||!key)return;
+                const registry=readAccountRegistry();
+                registry[normalized]=key;
+                writeAccountRegistry(registry);
+            };
+            const removeAccountFromRegistry=(username)=>{
+                const normalized=normalizeUsernameKey(username);
+                if(!normalized)return;
+                const registry=readAccountRegistry();
+                delete registry[normalized];
+                writeAccountRegistry(registry);
+            };
 
             const isUsernameTakenStrict=(username)=>{
                 const normalized=normalizeUsernameKey(username);
@@ -1697,7 +1750,7 @@ const runBugChecks=()=>{
                         if(!k)continue;
                         if(k.endsWith('-account')||k.endsWith('-data')||k.endsWith('-data-backup')||k.endsWith('-social'))keys.push(k);
                     }
-                    ['current-user','login_attempts','pending-delete-at'].forEach(k=>keys.push(k));
+                    ['current-user','login_attempts','pending-delete-at',ACCOUNT_REGISTRY_KEY].forEach(k=>keys.push(k));
                     const unique=[...new Set(keys)];
                     unique.forEach(k=>localStorage.removeItem(k));
                     return unique.length;
@@ -1707,15 +1760,19 @@ const runBugChecks=()=>{
             const getAccountKeyByUsername=(username)=>{
                 const normalized=normalizeUsernameKey(username);
                 if(!normalized)return null;
+                const registry=readAccountRegistry();
+                const regKey=registry[normalized];
+                if(regKey&&localStorage.getItem(regKey))return regKey;
+                // fallback scan + self-heal registry
                 for(let i=0;i<localStorage.length;i++){
                     const key=localStorage.key(i);
                     if(key&&key.endsWith('-account')){
                         const uname=key.startsWith('user-')?key.slice(5).replace(/-account$/,''):key.replace(/-account$/,'');
-                        if(normalizeUsernameKey(uname)===normalized)return key;
+                        if(normalizeUsernameKey(uname)===normalized){registerAccountInRegistry(uname,key);return key;}
                         try{
                             const raw=localStorage.getItem(key);
                             const acc=raw?JSON.parse(raw):null;
-                            if(acc&&normalizeUsernameKey(acc.username)===normalized)return key;
+                            if(acc&&normalizeUsernameKey(acc.username)===normalized){registerAccountInRegistry(acc.username,key);return key;}
                         }catch(e){}
                     }
                 }
@@ -1887,6 +1944,7 @@ const runBugChecks=()=>{
                 accountData.sessionFingerprint=getSessionFingerprint();
                 accountData.trustBadge=createTrustBadge(username);
                 S.set(`user-${username}-account`,JSON.stringify(accountData));
+                registerAccountInRegistry(username,`user-${username}-account`);
                 S.set('current-user',username);
                 setUser(username);
                 setProfilePic('');
@@ -2117,6 +2175,7 @@ const runBugChecks=()=>{
                     try{await FB.del(`inbox/${username}`);}catch(e){}
                 }
                 S.delete(`user-${username}-account`);
+                removeAccountFromRegistry(username);
                 S.delete(`user-${username}-data`);
                 S.delete(`user-${username}-data-backup`);
                 S.delete(`user-${username}-social`);
@@ -2596,6 +2655,7 @@ Make sure the username is spelled correctly (it's case-insensitive). They must h
                     localStorage.setItem(resetMarker,String(getTrustedTime()));
                     if(removed>0)console.warn(`🧹 Fresh start cleanup removed ${removed} local account records.`);
                 }
+                rebuildAccountRegistry();
                 const u=S.get('current-user');
                 if(u?.value){
                     setUser(u.value);
@@ -5924,9 +5984,8 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                     <p className="text-sm opacity-80 mb-4">Run a full gameplay health check now? This helps verify time, battle, goals, habits, shop, settings, wheel, timezone, anti-cheat, OTP, and animation systems after login.</p>
                                     <div className="flex gap-2">
                                         <button onClick={()=>setShowPostLoginAuditPrompt(false)} className="flex-1 px-3 py-2 rounded-lg bg-gray-700 text-white font-bold">Later</button>
-                                        <button onClick={()=>{const a=runFullFeatureAudit();const b=runFinalCompleteDebug();const c=runUltimateGameplayAudit();alert(`✅ Deep system checks done
-Full: ${a.passCount}/${a.total}
-Complete: ${b.pass}/${b.total}
+                                        <button onClick={()=>{const t=runTimeSystemDebug();const a=runFullFeatureAudit();const b=runFinalCompleteDebug();const c=runUltimateGameplayAudit();alert(`✅ Deep system checks done
+Time: ${t.pass}/${t.total}\nFull: ${a.passCount}/${a.total}\nComplete: ${b.pass}/${b.total}
 Ultimate: ${c.pass}/${c.total}`);setShowPostLoginAuditPrompt(false);}} className="flex-1 px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold">Run Checks</button>
                                     </div>
                                 </div>
