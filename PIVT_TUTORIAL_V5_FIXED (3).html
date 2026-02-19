@@ -1005,17 +1005,24 @@
                         const runUltimateGameplayAudit=()=>{
                 const categories=[];
                 const add=(area,name,pass,detail='')=>categories.push({area,name,pass:Boolean(pass),detail});
+                const now=getTrustedTime();
+                const todayKey=new Date(now).toDateString();
+                const activeEvents=getActiveSpecialEvents(now);
                 // Time / timezone / today system
                 add('time','Trusted time function',typeof getTrustedTime==='function');
                 add('time','Timezone configured',typeof timeZone==='string'&&timeZone.length>0,timeZone);
-                add('time','Today string stable',typeof new Date(getTrustedTime()).toDateString()==='string');
+                add('time','Today string stable',typeof todayKey==='string'&&todayKey.length>0,todayKey);
+                add('time','Timezone helper available',typeof getTimezoneClock==='function');
                 // Battle & ranked systems
                 add('battle','Battle tabs include ranked/events',Array.isArray(['friends','challenges','trading','leaderboard','ranked','events']));
                 add('battle','Leaderboard arrays valid',Array.isArray(leaderboard)&&Array.isArray(rankedBoard));
                 add('battle','Ranked updater wired',typeof updateRankedLeaderboard==='function');
+                add('battle','Challenges structure sane',challenges.every(c=>c&&c.id&&c.from&&c.to));
                 // AI goals / habits reminder data
                 add('goals','Goal AI difficulty bounded',goals.every(g=>(g.aiDifficulty||0)>=0&&(g.aiDifficulty||0)<=10));
+                add('goals','Goal progress bounded',goals.every(g=>(g.progress||0)>=0&&(g.progress||0)<=100));
                 add('habits','Habit reminder time shape',habits.every(h=>!h.reminderTime||/^\d{2}:\d{2}$/.test(h.reminderTime)));
+                add('habits','Habit streak non-negative',habits.every(h=>(h.streak||0)>=0&&(h.longestStreak||0)>=0));
                 // Shop / secrets / seasons / easter-eggs
                 add('shop','Shop item IDs unique',new Set(shopItems.map(i=>i.id)).size===shopItems.length,`count=${shopItems.length}`);
                 add('shop','Seasonal secret tiers exist',shopItems.some(i=>i.id==='s6_theme_infinity')&&shopItems.some(i=>i.id==='s6_border_infinity'));
@@ -1025,18 +1032,22 @@
                 // Settings / theme / device responsiveness
                 add('settings','Theme preference control active',typeof applyThemePreference==='function'&&['dark','light','auto'].includes(appThemePref));
                 add('settings','UI profile responsive',['phone','tablet','laptop','desktop','ultrawide'].includes(uiProfile));
+                add('settings','Settings modal scroll safety active',document.querySelectorAll('[class*="max-h\[92vh\]"]').length>=0);
                 // Progress + wheel integration
                 add('progress','Level bounds',lvl>=1&&lvl<=5);
                 add('progress','Tier bounds',tier>=0&&tier<=41);
+                add('progress','XP progress non-negative',Number(xp)>=0&&Number(totalXp)>=0);
                 add('wheel','Wheel tiers and prizes wired',Array.isArray(wheelTiers)&&Array.isArray(wheelPrizes)&&wheelPrizes.length>0);
-                // Anti-cheat / OTP / animations
+                add('wheel','Mega wheel event flag available',typeof activeEvents.megaWheel==='boolean');
+                // Anti-cheat / OTP / animations / events
                 add('security','Task anti-cheat gates exist',String(completeTask).includes('Anti-cheat')&&String(completeTask).includes('Anti-spam'));
                 add('security','Deletion lock active',typeof deleteAcc==='function');
                 add('otp','OTP sender integrated',typeof sendForgotOtp==='function'&&typeof sendEmailOtpViaEmailJS==='function');
+                add('events','Events state shape',typeof activeEvents==='object'&&typeof activeEvents.doubleXpWeekend==='boolean'&&typeof activeEvents.goldenHour==='boolean');
                 add('animation','Animation classes available',document.querySelectorAll('[class*="animate-"]').length>20);
                 const pass=categories.filter(c=>c.pass).length;
                 console.info(`🧪 ULTIMATE GAMEPLAY AUDIT: ${pass}/${categories.length} passed`,categories);
-                return {pass,total:categories.length,categories};
+                return {pass,total:categories.length,categories,today:todayKey,timeZone,activeEvents};
             };
 
             const runFinalCompleteDebug=()=>{
@@ -1054,6 +1065,9 @@
                 add('Ranked board generated',Array.isArray(rankedBoard));
                 add('OTP sender configured',typeof sendForgotOtp==='function');
                 add('Deletion lock wired',typeof deleteAcc==='function');
+                add('Time system available',typeof getTrustedTime==='function'&&typeof getTrustedHour==='function');
+                add('Timezone choices available',Array.isArray(timeZoneChoices)&&timeZoneChoices.length>10);
+                add('Progress bar inputs sane',Number(xp)>=0&&Number(totalXp)>=0&&Number(getLvlXp())>0);
                 const pass=out.filter(x=>x.pass).length;
                 console.info(`🧪 FINAL COMPLETE DEBUG: ${pass}/${out.length} passed`,out);
                 return {pass,total:out.length,results:out};
@@ -5862,7 +5876,7 @@ ${item.xpBoost}x XP + ${item.coinBoost}x Coins for ${Math.round(item.duration/60
                                     <p className="text-sm opacity-80 mb-4">Run a full gameplay health check now? This helps verify time, battle, goals, habits, shop, settings, wheel, timezone, anti-cheat, OTP, and animation systems after login.</p>
                                     <div className="flex gap-2">
                                         <button onClick={()=>setShowPostLoginAuditPrompt(false)} className="flex-1 px-3 py-2 rounded-lg bg-gray-700 text-white font-bold">Later</button>
-                                        <button onClick={()=>{const a=runFullFeatureAudit();const b=runFinalCompleteDebug();const c=runUltimateGameplayAudit();alert(`✅ System checks done
+                                        <button onClick={()=>{const a=runFullFeatureAudit();const b=runFinalCompleteDebug();const c=runUltimateGameplayAudit();alert(`✅ Deep system checks done
 Full: ${a.passCount}/${a.total}
 Complete: ${b.pass}/${b.total}
 Ultimate: ${c.pass}/${c.total}`);setShowPostLoginAuditPrompt(false);}} className="flex-1 px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold">Run Checks</button>
